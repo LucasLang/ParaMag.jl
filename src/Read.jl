@@ -54,9 +54,23 @@ function read_AILFT_params_ORCA6(outfile::String, method::String)
         end
         perm = [4,2,1,3,5]    # change order from 0,1,-1,2,-2 to 2,1,0,-1,-2 (=x2-y2,xz,z2,yz,xy) 
         hLFT = hLFT[perm, perm]
+<<<<<<< HEAD
         F2 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 2)
         F4 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 3, 2)
         F = Dict(0 => 0, 2 => F2/49, 4 => F4/441)
+=======
+        if method == "CASSCF"
+            F0 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 4)
+            F2 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 3, 2)
+            F4 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 4, 2)
+        else
+            F0 = 0.0
+            F2 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 2)
+            F4 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 3, 2)
+        end
+        F = Dict(0 => F0, 2 => F2/49, 4 => F4/441)
+        println("F ", F0," ", F2," ", F4)
+>>>>>>> calcshift
         zeta = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "ZETA_D"], 0, 2)/219474.63  # convert from cm-1 to Hartree
     end
     if norb == 7
@@ -70,6 +84,14 @@ function read_AILFT_params_ORCA6(outfile::String, method::String)
         perm = [6,4,2,1,3,5,7]   # change order from 0,1,-1,2,-2,3,-3 to 3,2,1,0,-1,-2,-3
     
         hLFT = hLFT[perm, perm]
+<<<<<<< HEAD
+=======
+
+        if method != "CASSCF"
+            println("WARNING !!!!!!")
+        end
+        
+>>>>>>> calcshift
         F0 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 2)
         F2 = 0
         try
@@ -161,7 +183,11 @@ function read_HFCmatrix(filecalcnmr::String, natoms::Int)
 end
 
 
+<<<<<<< HEAD
 function read_effectiveH(filecalcnmr::String, theory::String, Dflag::Bool=false, gflag::Bool=false)
+=======
+function read_effectiveH(filecalcnmr::String, theory::String, Smult::Int, Dflag::Bool=false, gflag::Bool=false)
+>>>>>>> calcshift
     #works for orca6
 
     file = readlines(filecalcnmr)
@@ -172,7 +198,11 @@ function read_effectiveH(filecalcnmr::String, theory::String, Dflag::Bool=false,
     for (i, line) in enumerate(file)
 
         if Dflag
+<<<<<<< HEAD
             if occursin("Raw matrix (cm-1)", line) && occursin("ZERO-FIELD SPLITTING", file[i-19]) && occursin("EFFECTIVE HAMILTONIAN", file[i-18])  #depends on S
+=======
+            if occursin("Raw matrix (cm-1)", line) && occursin("ZERO-FIELD SPLITTING", file[i-((2*Smult)+11)]) && occursin("EFFECTIVE HAMILTONIAN", file[i-((2*Smult)+10)])  #depends on S
+>>>>>>> calcshift
                 matrix = zeros(Float64, 3, 3)
                 for (ij,j) in enumerate(1:1:3)
                     splitline = split(file[i + j], "  ")
@@ -391,4 +421,8 @@ function read_integrals_so_f(fileint::String)   #could be adjuted to be used for
     # end
     return Integrals
 
+<<<<<<< HEAD
 end
+=======
+end
+>>>>>>> calcshift

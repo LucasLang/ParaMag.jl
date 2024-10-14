@@ -668,6 +668,7 @@ function test_print_composition2()
     printed_string_ground = String(take!(buf))
     MagFieldLFT.print_composition(C_rel_first, C_list, labels_list, thresh, buf)
     printed_string_first = String(take!(buf))
+
     ref_ground = """
      45.52%  E = -30.339968, S =  1.0, M_S = -1.0
      45.52%  E = -30.339968, S =  1.0, M_S =  1.0
@@ -722,6 +723,7 @@ end
 
 #at very low magnetic field the field dependent results and the zero field ones should be the same 
 function test_KurlandMcGarvey_ord4_Br_field()
+
     bohrinangstrom = 0.529177210903
     # atom counting starting from 1 (total number of atoms is 49, NH proton is the last one)
     r_Ni = [0.000,   0.000,   0.000]                      # atom 33
@@ -743,9 +745,9 @@ function test_KurlandMcGarvey_ord4_Br_field()
     B0 = B0_MHz/42.577478518/2.35051756758e5
     S = 1.0
 
-    shift_ord4 = MagFieldLFT.calc_shifts_KurlandMcGarvey_ord4(param, R, T, B0)
+    shift_ord4 = MagFieldLFT.calc_shifts_KurlandMcGarvey_ord4(param, R, T, B0, true, true)
     KMcG_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey(param, R, T)
-    Br_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey_Br(param, R, T, B0, S)
+    Br_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey_Br(param, R, T, B0, S, 2.0, true, true)
 
     return norm(KMcG_shifts - Br_shifts) < 1.0e-4  && norm(KMcG_shifts - shift_ord4) < 1.0e-4
 end
@@ -753,6 +755,7 @@ end
 #at very high temperature the difference in field dependent effects simulation should decrease
 #due to the population of all the levels of the ground multiplet  
 function test_KurlandMcGarvey_ord4_Br_temperature()
+    
     bohrinangstrom = 0.529177210903
     # atom counting starting from 1 (total number of atoms is 49, NH proton is the last one)
     r_Ni = [0.000,   0.000,   0.000]                      # atom 33
@@ -774,8 +777,8 @@ function test_KurlandMcGarvey_ord4_Br_temperature()
     B0 = B0_MHz/42.577478518/2.35051756758e5
     S = 1.0
 
-    shift_ord4 = MagFieldLFT.calc_shifts_KurlandMcGarvey_ord4(param, R, T, B0)
-    Br_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey_Br(param, R, T, B0, S)
+    shift_ord4 = MagFieldLFT.calc_shifts_KurlandMcGarvey_ord4(param, R, T, B0, true, true)
+    Br_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey_Br(param, R, T, B0, S, 2.0, true, true)
 
     return norm((shift_ord4 - Br_shifts) .* 100 ./ shift_ord4) < 5.0e-2
 end
