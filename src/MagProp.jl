@@ -192,7 +192,7 @@ B0: Magnitude of the external magnetic field (atomic units)
 T: Temperature (Kelvin)
 """
 function calc_Bind(param::LFTParam, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
-    H_fieldfree, L, S, Mel = calc_operators_SDbasis(param)
+    H_fieldfree, Mel = calc_operators_SDbasis(param)
     integrands(theta, chi) = calc_integrands(theta, chi, H_fieldfree, Mel, R, B0, T)
     integrals = integrate_spherical(integrands, grid)
     numerators = integrals[1:(end-1)]

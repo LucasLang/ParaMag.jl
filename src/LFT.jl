@@ -485,5 +485,5 @@ function calc_operators_SDbasis(param::LFTParam)
     L = calc_L(l, exc)
     S = calc_S(l, exc)
     Mel = calc_magneticmoment_operator(L,S)
-    return H_fieldfree, L, S, Mel
+    return H_fieldfree, Mel
 end

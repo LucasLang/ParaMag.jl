@@ -392,7 +392,7 @@ function test_average_magnetic_moment3()
     T = 0.0001
     B0_mol = [0, 0, 1.0e-7]
 
-    H_fieldfree, L, S, Mel = MagFieldLFT.calc_operators_SDbasis(param)
+    H_fieldfree, Mel = MagFieldLFT.calc_operators_SDbasis(param)
     energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Mel_avg_finitefield = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
 
@@ -475,7 +475,7 @@ function test_calc_susceptibility_vanVleck()
     Mel_avg_linear = (1/(4pi*MagFieldLFT.alpha^2))*chi*B0_mol
 
     # version 2
-    H_fieldfree, L, S, Mel = MagFieldLFT.calc_operators_SDbasis(param)
+    H_fieldfree, Mel = MagFieldLFT.calc_operators_SDbasis(param)
     energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Mel_avg_finitefield = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
 
