@@ -3,6 +3,14 @@
 # All functions that are specific to a certain concrete computational model, should go to
 # the respective file.
 
+"""
+This is an abstract type for different computational models, like LFT or Spin Hamiltonians.
+
+Functions that should be implemented for any concrete subtype:
+    calc_operators: Returns the field-free Hamiltonian and magnetic moment operators.
+"""
+abstract type CompModel end
+
 function xyz2spher(x::Real, y::Real, z::Real)
     theta = acos(z)
     phi = atan(y,x)   # 2-argument atan (also known as atan2)

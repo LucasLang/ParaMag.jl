@@ -460,22 +460,12 @@ function calc_S(l::Int, exc::ExcitationLists)
     return Sx, Sy, Sz
 end
 
-
-# XXXLucasXXX: code duplication -> can define this function in terms of calc_Hderiv
 function calc_magneticmoment_operator(L::NTuple{3, Matrix{ComplexF64}}, S::Tuple{Matrix{Float64}, Matrix{ComplexF64}, Matrix{Float64}})
     Mel = Vector{Matrix{ComplexF64}}(undef, 3)
     for i in 1:3
         Mel[i] = -0.5*L[i] - S[i]
     end
     return Mel
-end
-
-function calc_Hderiv(L::NTuple{3, Matrix{ComplexF64}}, S::Tuple{Matrix{Float64}, Matrix{ComplexF64}, Matrix{Float64}})
-    Hderiv = Vector{Matrix{ComplexF64}}(undef, 3)
-    for i in 1:3
-        Hderiv[i] = 0.5*L[i] - S[i]    # XXXLucasXXX: The sign in front of S[i] is wrong!
-    end
-    return Hderiv
 end
 
 function calc_operators(param::LFTParam)

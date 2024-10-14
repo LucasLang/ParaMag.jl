@@ -5,10 +5,10 @@ using LinearAlgebra, Permutations, OutputParser, DelimitedFiles, Printf, TensorO
 export read_AILFT_params_ORCA, LFTParam, lebedev_grids
 
 include("Basics.jl")
+include("MagProp.jl")
 include("Read.jl")
 include("LFT.jl")
 include("SpinHamiltonians.jl")
-include("MagProp.jl")
 include("PrintComposition.jl")
 
 function F_chi1_chi3_fromparam(F_calc_shift::Function)
