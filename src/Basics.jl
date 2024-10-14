@@ -43,6 +43,19 @@ function calc_splusminus(l::Float64, sign::Int)
 end
 
 """
+Return Sx, Sy, Sz operators, given the spin quantum number s.
+"""
+function calc_soperators(s::Float64)
+    Sp = calc_splusminus(s, +1)
+    Sm = calc_splusminus(s, -1)
+    Sz = calc_sz(s)
+
+    Sx = 0.5 * (Sp + Sm)
+    Sy = -0.5im * (Sp - Sm)
+    return cat(Sx, Sy, Sz; dims=3)
+end
+
+"""
 Returns lz, lplus, lminus in basis of complex atomic orbitals of angular momentum l.
 """
 function calc_lops_complex(l::Int)

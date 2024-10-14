@@ -1,15 +1,44 @@
+"""
+gtensor: Zeeman tensor parametrizing the electronic magnetic moment
+Atensor: Hyperfine coupling tensor parametrizing the magnetic field created by the electrons
+Dtensor: Zero-field splitting tensor
+mult:    Spin multiplicity (=2S+1, where S is the total spin quantum number)
+"""
+struct SpinHamiltonian <: CompModel
+    gtensor::Matrix{Float64}
+    Atensor::Matrix{Float64}
+    Dtensor::Matrix{Float64}
+    mult::Int64
+end
+
+"""
+Implements S^T D S
+"""
+function calc_H_fieldfree(sh::SpinHamiltonian)
+    S = 0.5*(sh.mult - 1)    # Spin quantum number
+    Sop = calc_soperators(S)
+    StDS = sum(sh.Dtensor[i, j] * Sop[:, :, i] * Sop[:, :, j] for i in 1:3, j in 1:3)
+    return StDS
+end
+
+function calc_magneticmoment_operator(sh::SpinHamiltonian)
+    S = 0.5*(sh.mult - 1)    # Spin quantum number
+    Sop = calc_soperators(S)
+    Mel = [0.5*sum(sh.gtensor[i,j] * Sop[:, :, j] for j in 1:3) for i in 1:3]
+    return Mel
+end
+
+function calc_operators(sh::SpinHamiltonian)
+    H_fieldfree = calc_H_fieldfree(sh)
+    Mel = calc_magneticmoment_operator(sh)
+    return H_fieldfree, Mel
+end
+
 function calc_dyadics(s::Float64, D::Matrix{Float64}, T::Real, quadruple::Bool)
+    S = calc_soperators(s)
 
-    Sp = calc_splusminus(s, +1)
-    Sm = calc_splusminus(s, -1)
-    Sz = calc_sz(s)
+    Hderiv = [S[:,:,1], S[:,:,2], S[:,:,3]]
 
-    Sx = 0.5 * (Sp + Sm)
-    Sy = -0.5im * (Sp-Sm)
-
-    Hderiv = [Sx, Sy, Sz]
-
-    S = cat(Sx, Sy, Sz; dims=3)
     StDS = sum(D[i, j] * S[:, :, i] * S[:, :, j] for i in 1:3, j in 1:3)
 
     solution = eigen(StDS)
