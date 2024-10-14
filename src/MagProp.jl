@@ -198,8 +198,8 @@ function calc_Bind(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Re
     return [N/D for N in numerators]
 end
 
-function estimate_shifts_finitefield(param::LFTParam, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
-    Bind_values = calc_Bind(param, R, B0, T, grid)
+function estimate_shifts_finitefield(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
+    Bind_values = calc_Bind(model, R, B0, T, grid)
     return (Bind_values / B0) * 1e6    # convert to ppm
 end
 
@@ -377,12 +377,24 @@ function calc_F_deriv4(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     return real(Fderiv4_symmetrized)
 end
 
+function F_deriv_param2states(calc_F_derivx::Function)
+    function calc_F_deriv_param(model::CompModel, T::Real, B0_mol::Vector{Float64})
+        H_fieldfree, Mel = calc_operators(model)
+        Hderiv = -Mel
+        energies, states = calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
+        return calc_F_derivx(energies, states, Hderiv, T)
+    end
+    return calc_F_deriv_param
+end
 
-# XXXLucasXXX: The following two functions should be modified such that they can be used with any model Hamiltonian
-#              (not just full multiplet LFT)
-function calc_susceptibility_vanVleck(param::LFTParam, T::Real)
+calc_F_deriv1(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_param2states(calc_F_deriv1)(model, T, B0_mol)
+calc_F_deriv2(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_param2states(calc_F_deriv2)(model, T, B0_mol)
+calc_F_deriv3(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_param2states(calc_F_deriv3)(model, T, B0_mol)
+calc_F_deriv4(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_param2states(calc_F_deriv4)(model, T, B0_mol)
+
+function calc_susceptibility_vanVleck(model::CompModel, T::Real)
     B = [0.0, 0.0, 0.0]
-    Fderiv2 = calc_F_deriv2(param, T, B)
+    Fderiv2 = calc_F_deriv2(model, T, B)
     return -4pi*alpha^2 * Fderiv2
 end
 
@@ -391,8 +403,8 @@ Returns the chemical shifts in ppm calculated according to the Kurland-McGarvey 
 R: Vectors from the points at which we want to know the induced field (typically nuclear positions) to the paramagnetic center (atomic units = Bohr)
 T: Temperature (Kelvin)
 """
-function calc_shifts_KurlandMcGarvey(param::LFTParam, R::Vector{Vector{Float64}}, T::Real)
-    chi = calc_susceptibility_vanVleck(param, T)
+function calc_shifts_KurlandMcGarvey(model::CompModel, R::Vector{Vector{Float64}}, T::Real)
+    chi = calc_susceptibility_vanVleck(model, T)
     shifts = Vector{Float64}(undef, 0)
     for Ri in R
         D = calc_dipole_matrix(Ri)
