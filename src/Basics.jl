@@ -1,5 +1,8 @@
 """
 This is an abstract type for different computational models, like LFT or Spin Hamiltonians.
+
+Functions that should be implemented for any concrete subtype:
+    calc_operators: Returns the field-free Hamiltonian and magnetic moment operators.
 """
 abstract type CompModel end
 

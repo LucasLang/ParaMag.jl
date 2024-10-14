@@ -478,7 +478,7 @@ function calc_Hderiv(L::NTuple{3, Matrix{ComplexF64}}, S::Tuple{Matrix{Float64},
     return Hderiv
 end
 
-function calc_operators_SDbasis(param::LFTParam)
+function calc_operators(param::LFTParam)
     l=(param.norb-1)÷2
     exc = calc_exclists(l,param.nel)
     H_fieldfree = calc_H_fieldfree(param, exc)

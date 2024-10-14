@@ -184,15 +184,13 @@ function calc_integrands(theta::Real, chi::Real, H_fieldfree::HermMat, Mel::Vect
     return [Zel*Bind_avg_lab_z; Zel]
 end
 
-# XXXLucasXXX: Generalize this function such that it only depends on magnetic moment operators, not on L, S, or ligand field parameters
-#              Goal: Also use this together with spin Hamiltonian
 """
 R: Vectors from the points at which we want to know the induced field (typically nuclear positions) to the paramagnetic center (atomic units = Bohr)
 B0: Magnitude of the external magnetic field (atomic units)
 T: Temperature (Kelvin)
 """
-function calc_Bind(param::LFTParam, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
-    H_fieldfree, Mel = calc_operators_SDbasis(param)
+function calc_Bind(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
+    H_fieldfree, Mel = calc_operators(model)
     integrands(theta, chi) = calc_integrands(theta, chi, H_fieldfree, Mel, R, B0, T)
     integrals = integrate_spherical(integrands, grid)
     numerators = integrals[1:(end-1)]
