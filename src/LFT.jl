@@ -10,7 +10,7 @@ hLFT: One-electron ligand field matrix
 F: Racah parameters
 zeta: Spin-orbit coupling parameter
 """
-struct LFTParam
+struct LFTParam <: CompModel
     nel::Int64
     norb::Int64
     l::Int64

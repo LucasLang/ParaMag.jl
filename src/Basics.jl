@@ -1,4 +1,9 @@
 """
+This is an abstract type for different computational models, like LFT or Spin Hamiltonians.
+"""
+abstract type CompModel end
+
+"""
 Calculate lz operator in basis of complex atomic orbitals.
 """
 calc_lz(l::Int) = diagm(l:-1:-l)

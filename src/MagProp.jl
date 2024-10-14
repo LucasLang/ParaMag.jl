@@ -1,3 +1,8 @@
+# The functions in this file should not be implemented for specific computational models
+# (like LFT or Spin Hamiltonians), but for the CompModel abstract type.
+# All functions that are specific to a certain concrete computational model, should go to
+# the respective file.
+
 function xyz2spher(x::Real, y::Real, z::Real)
     theta = acos(z)
     phi = atan(y,x)   # 2-argument atan (also known as atan2)
@@ -23,10 +28,17 @@ end
 
 lebedev_grids = setup_Lebedev_grids()
 
-const HermMat = Hermitian{T, Matrix{T}} where T <: Number  # Complex hermitian (or real symmetric) matrix
+const HermMat = Hermitian{T, Matrix{T}} where T <: Number  # Complex Hermitian (or real symmetric) matrix
 
-function calc_H_magfield(H_fieldfree::HermMat, L::NTuple{3, Matrix{ComplexF64}}, S::Tuple{Matrix{Float64}, Matrix{ComplexF64}, Matrix{Float64}}, B::Vector{Float64})
-    H_magfield = H_fieldfree + 0.5*(L[1]*B[1] + L[2]*B[2] + L[3]*B[3]) + S[1]*B[1] + S[2]*B[2] + S[3]*B[3]
+"""
+Note: this function assumes that the field dependent Hamiltonian is of the form
+H(B) = H0 - M*B,
+where M is the electronic magnetic moment operator.
+This means that Hamiltonians that e.g. include some kind of diamagnetic operator
+(quadratic in the external field) are not covered by this function!
+"""
+function calc_H_magfield(H_fieldfree::HermMat, Mel::Vector{Matrix{ComplexF64}}, B::Vector{Float64})
+    H_magfield = H_fieldfree - (Mel[1]*B[1] + Mel[2]*B[2] + Mel[3]*B[3])
     return Hermitian(H_magfield)    # this is important for the eigensolver to yield orthogonal eigenvectors
 end
 
@@ -36,10 +48,8 @@ function fieldfree_GS_energy(H_fieldfree::HermMat)
     return energies[1]
 end
 
-# XXXLucasXXX: Modify this function such that it takes the magnetic moment operator instead of L and S:
-#              Then the same function can also be reused in Spin Hamiltonian framework.
-function calc_free_energy(H_fieldfree::HermMat, L::NTuple{3, Matrix{ComplexF64}}, S::Tuple{Matrix{Float64}, Matrix{ComplexF64}, Matrix{Float64}}, B0_mol::Vector{Float64}, T::Real)
-    energies, states = calc_solutions_magfield(H_fieldfree, L, S, B0_mol)
+function calc_free_energy(H_fieldfree::HermMat, Mel::Vector{Matrix{ComplexF64}}, B0_mol::Vector{Float64}, T::Real)
+    energies, states = calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     kB = 3.166811563e-6    # Boltzmann constant in Eh/K
     beta = 1/(kB*T)
     energies_exp = exp.(-beta*energies)
@@ -62,8 +72,8 @@ end
 
 calc_solutions(H_fieldfree::HermMat) = calc_solutions(H_fieldfree, H_fieldfree)
 
-function calc_solutions_magfield(H_fieldfree::HermMat, L::NTuple{3, Matrix{ComplexF64}}, S::Tuple{Matrix{Float64}, Matrix{ComplexF64}, Matrix{Float64}}, B0_mol::Vector{Float64})
-    H_magfield = calc_H_magfield(H_fieldfree, L, S, B0_mol)
+function calc_solutions_magfield(H_fieldfree::HermMat, Mel::Vector{Matrix{ComplexF64}}, B0_mol::Vector{Float64})
+    H_magfield = calc_H_magfield(H_fieldfree, Mel, B0_mol)
     return calc_solutions(H_fieldfree, H_magfield)
 end
 
@@ -153,8 +163,6 @@ function calc_Bind_avg_lab_z(chi::Real, theta::Real, Bind_avg_mol::Vector{Float6
             cos(theta)*         Bind_avg_mol[3]
 end
 
-# XXXLucasXXX: Remove S and L from arguments of the following function, and replace by magnetic
-# moment operator!
 """
 theta: Euler angle: Angle between z axis (molecular frame) and Z axis (lab frame)
 chi: Euler angle describing rotations of the molecule around its molecular frame z axis
@@ -166,9 +174,9 @@ R: Vectors from the points at which we want to know the induced field (typically
 B0: Magnitude of the external magnetic field (atomic units)
 T: Temperature (Kelvin)
 """
-function calc_integrands(theta::Real, chi::Real, H_fieldfree::HermMat, L::NTuple{3, Matrix{ComplexF64}}, S::Tuple{Matrix{Float64}, Matrix{ComplexF64}, Matrix{Float64}}, Mel::Vector{Matrix{ComplexF64}}, R::Vector{Vector{Float64}}, B0::Real, T::Real)
+function calc_integrands(theta::Real, chi::Real, H_fieldfree::HermMat, Mel::Vector{Matrix{ComplexF64}}, R::Vector{Vector{Float64}}, B0::Real, T::Real)
     B0_mol = calc_B0_mol(B0, chi, theta)
-    energies, states = calc_solutions_magfield(H_fieldfree, L, S, B0_mol)
+    energies, states = calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Zel = calc_Zel(energies, T)
     Mel_avg_mol = calc_average_magneticmoment(energies, states, Mel, T)
     Bind_avg_mol = [dipole_field(Mel_avg_mol, R_i) for R_i in R]
@@ -185,8 +193,8 @@ T: Temperature (Kelvin)
 """
 function calc_Bind(param::LFTParam, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
     H_fieldfree, L, S, Mel = calc_operators_SDbasis(param)
-    integrands(theta, chi) = calc_integrands(theta, chi, H_fieldfree, L, S, Mel, R, B0, T)
-    integrals = integrate_spherical(integrands , grid)
+    integrands(theta, chi) = calc_integrands(theta, chi, H_fieldfree, Mel, R, B0, T)
+    integrals = integrate_spherical(integrands, grid)
     numerators = integrals[1:(end-1)]
     D = integrals[end]   # denominator (normalization)
     return [N/D for N in numerators]

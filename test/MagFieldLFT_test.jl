@@ -339,9 +339,10 @@ function test_calc_free_energy()
     H_fieldfree = MagFieldLFT.calc_H_fieldfree(param, exc)
     S = MagFieldLFT.calc_S(param.l, exc)
     L = MagFieldLFT.calc_L(param.l, exc)
+    Mel = MagFieldLFT.calc_magneticmoment_operator(L, S)
     B = [0.0, 0.0, 1.0e-5]
     T = 298.0
-    F1 = MagFieldLFT.calc_free_energy(H_fieldfree, L, S, B, T)
+    F1 = MagFieldLFT.calc_free_energy(H_fieldfree, Mel, B, T)
     return F1 ≈ -0.0013082816934478216
 end
 
@@ -351,9 +352,10 @@ function test_average_magnetic_moment()
     H_fieldfree = MagFieldLFT.calc_H_fieldfree(param, exc)
     S = MagFieldLFT.calc_S(param.l, exc)
     L = MagFieldLFT.calc_L(param.l, exc)
+    Mel = MagFieldLFT.calc_magneticmoment_operator(L, S)
     B0_mol = [0.0, 0.0, 0.0]
     T = 298.0
-    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, L, S, B0_mol)
+    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Hderiv = MagFieldLFT.calc_Hderiv(L,S)
     Fderiv1 = MagFieldLFT.calc_F_deriv1(energies, states, Hderiv, T)
     Mel_avg = -Fderiv1
@@ -367,9 +369,10 @@ function test_average_magnetic_moment2()
     H_fieldfree = MagFieldLFT.calc_H_fieldfree(param, exc)
     S = MagFieldLFT.calc_S(param.l, exc)
     L = MagFieldLFT.calc_L(param.l, exc)
+    Mel = MagFieldLFT.calc_magneticmoment_operator(L, S)
     B0_mol = [0.0, 0.0, 1.0e-4]
     T = 1.0
-    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, L, S, B0_mol)
+    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Mel = MagFieldLFT.calc_magneticmoment_operator(L,S)
     Mel_avg = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
     return Mel_avg ≈ [-0.0003645214756898332, -1.2322563787476262e-13, 1.4631881898029349]
@@ -390,7 +393,7 @@ function test_average_magnetic_moment3()
     B0_mol = [0, 0, 1.0e-7]
 
     H_fieldfree, L, S, Mel = MagFieldLFT.calc_operators_SDbasis(param)
-    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, L, S, B0_mol)
+    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Mel_avg_finitefield = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
 
     return norm(Mel_avg_finitefield - [0.0, 0.0, 0.5]) < 1.0e-4
@@ -473,7 +476,7 @@ function test_calc_susceptibility_vanVleck()
 
     # version 2
     H_fieldfree, L, S, Mel = MagFieldLFT.calc_operators_SDbasis(param)
-    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, L, S, B0_mol)
+    energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Mel_avg_finitefield = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
 
     return norm(Mel_avg_finitefield - Mel_avg_linear) < 1.0e-10

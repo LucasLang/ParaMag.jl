@@ -15,7 +15,7 @@ function F_deriv_param2states(calc_F_derivx::Function)
     function calc_F_deriv_param(param::LFTParam, T::Real, B0_mol::Vector{Float64})
         H_fieldfree, L, S, Mel = calc_operators_SDbasis(param)
         Hderiv = -Mel
-        energies, states = calc_solutions_magfield(H_fieldfree, L, S, B0_mol)
+        energies, states = calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
         return calc_F_derivx(energies, states, Hderiv, T)
     end
     return calc_F_deriv_param
