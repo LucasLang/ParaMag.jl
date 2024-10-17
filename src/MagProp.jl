@@ -85,6 +85,10 @@ function calc_solutions_magfield(H_fieldfree::HermMat, Mel::Vector{Matrix{Comple
     return calc_solutions(H_fieldfree, H_magfield)
 end
 
+"""
+Electronic canonical partition function.
+This can also be rewritten as exp(-beta * Fel).
+"""
 function calc_Zel(energies::Vector{Float64}, T::Real)
     beta = 1/(kB*T)
     energies_exp = exp.(-beta*energies)
@@ -172,11 +176,14 @@ function calc_Bind_avg_lab_z(chi::Real, theta::Real, Bind_avg_mol::Vector{Float6
 end
 
 """
+For a specific orientation of the molecule (parametrized in terms of Euler angles),
+this function calculates all the integrands that occur in the numerator for the different nuclei,
+and the integrand in the denominator (which is just Zel).
+Currently, Bind_avg_mol is calculated in the point-dipole approximation.
+
 theta: Euler angle: Angle between z axis (molecular frame) and Z axis (lab frame)
 chi: Euler angle describing rotations of the molecule around its molecular frame z axis
 H_fieldfree: Hamiltonian in the absence of a magnetic field (Slater determinant basis)
-L: Orbital angular momentum operators (Slater determinant basis)
-S: Total spin operators (Slater determinant basis)
 Mel: Electronic magnetic dipole moment operators (Slater determinant basis)
 R: Vectors from the points at which we want to know the induced field (typically nuclear positions) to the paramagnetic center (atomic units = Bohr)
 B0: Magnitude of the external magnetic field (atomic units)
