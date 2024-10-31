@@ -20,6 +20,9 @@ function calc_lplusminus(l::Int, sign::Int)
     return op
 end
 
+# XXXLucasXXX: Think about how to avoid this code duplication
+# Ideally, only integers and half-integers should be allowed as arguments
+# Maybe do assert that 2*l is approximately integer.
 """
 Calculate sz operator in basis of complex atomic orbitals.
 """

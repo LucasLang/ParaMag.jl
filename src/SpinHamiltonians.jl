@@ -145,3 +145,32 @@ function calc_contactshift_fielddep(s::Float64, Aiso::Matrix{Float64}, g::Matrix
 
     return shiftcon
 end
+
+"""
+Returns l0, l+1, l-1 (irreducible components of) angular momentum operators with quantum number l
+"""
+function calc_lops_irreducible(l)
+    l0 = calc_sz(l)
+    lp1 = -(1/sqrt(2))*calc_splusminus(l,+1)
+    lm1 = (1/sqrt(2))*calc_splusminus(l,-1)
+    return l0, lp1, lm1
+end
+
+"""
+Calculates spherical tensor operators J^(k)_q recursively.
+"""
+function calc_STOs_recursive(l)
+    dim = Int64(2l+1)
+    T00 = Matrix(1.0I, dim, dim)
+    T10, T11, T1m1 = calc_lops_irreducible(l)
+    # initialize elements with k=0 and k=1
+    T = Dict((0,0) => T00, (1,1) => T11, (1,0) => T10, (1,-1) => T1m1)
+    for k in 2:(2l+1), m in -k:k   # k=2l+1 should already be exactly zero; just doing this for testing XXXLucasXXX
+        Tkm = zeros(dim, dim)
+        for q in -(k-1):(k-1), q_prime in -1:1
+            Tkm += clebschgordan(k-1, q, 1, q_prime, k, m)*T[(k-1, q)]*T[(1, q_prime)]
+        end
+        T[(k, m)] = Tkm
+    end
+    return T
+end

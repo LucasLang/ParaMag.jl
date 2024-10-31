@@ -1,6 +1,6 @@
 module MagFieldLFT
 
-using LinearAlgebra, Permutations, OutputParser, DelimitedFiles, Printf, TensorOperations
+using LinearAlgebra, Permutations, OutputParser, DelimitedFiles, Printf, TensorOperations, WignerSymbols
 
 export read_AILFT_params_ORCA, LFTParam, lebedev_grids
 
