@@ -174,3 +174,19 @@ function calc_STOs_recursive(l)
     end
     return T
 end
+
+# use Wigner-Eckart theorem to calculate the STOs
+function calc_STOs_WE(l)
+    dim = Int64(2l+1)
+    offset = l+1
+    T = Dict()
+    for k in 0:Int64(2l), m in -k:k
+        Tkm = zeros(dim, dim)
+        RME = sqrt((factorial(k))^2 * factorial(Int64(2l+k+1)) / Int64(2l+1) / 2^k / factorial(2k) / factorial(Int64(2l-k)))
+        for M in -l:l, M_prime in -l:l
+                Tkm[Int64(offset-M), Int64(offset-M_prime)] = clebschgordan(l, M_prime, k, m, l, M) * RME
+        end
+        T[(k, m)] = Tkm
+    end
+    return T
+end

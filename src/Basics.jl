@@ -26,9 +26,9 @@ end
 """
 Calculate sz operator in basis of complex atomic orbitals.
 """
-calc_sz(l::Float64) = diagm(l:-1:-l)
+calc_sz(l::Real) = diagm(l:-1:-l)
 
-function calc_splusminus(l::Float64, sign::Int)
+function calc_splusminus(l::Real, sign::Int)
     @assert Int64(abs(sign)) == 1       # sign may only be +1 or -1
     dim = Int(2l+1)
     mvalues = l:-1:-l
@@ -48,7 +48,7 @@ end
 """
 Return Sx, Sy, Sz operators, given the spin quantum number s.
 """
-function calc_soperators(s::Float64)
+function calc_soperators(s::Real)
     Sp = calc_splusminus(s, +1)
     Sm = calc_splusminus(s, -1)
     Sz = calc_sz(s)

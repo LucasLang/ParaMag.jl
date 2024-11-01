@@ -881,6 +881,12 @@ function test_cubicresponse_spin()
     return norm(SiSjSkSl - ref)/norm(ref) < 1.0e-10
 end
 
+function test_STOs()
+    TWE = MagFieldLFT.calc_STOs_WE(3.0)
+    Trec = MagFieldLFT.calc_STOs_recursive(3.0)
+    return norm(Trec[(4,-3)]-TWE[(4,-3)]) < 1e-10 && norm(Trec[(5,2)]-TWE[(5,2)]) < 1e-10
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -935,4 +941,5 @@ end
     @test test_calc_contactshift()
     @test test_KurlandMcGarvey_vs_finitefield_Lebedev_ord4()
     @test test_cubicresponse_spin()
+    @test test_STOs()
 end
