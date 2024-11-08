@@ -19,6 +19,34 @@ struct LFTParam <: CompModel
     zeta::Float64
 end
 
+"""
+H_fieldfree: The field-free Hamiltonian
+Mel_trafo:: Matrix applied to base operators to get magnetic moment operators (here: unit matrix)
+BHF_trafo:: Matrix applied to base operators to get hyperfine field operators (here: using PDA)
+base_op:: base operators (here: magnetic moment operators)
+"""
+struct LFT <: CompModel
+    H_fieldfree::Matrix{Complex64}
+    Mel_trafo::Matrix{Float64}
+    BHF_trafo::Vector{Matrix{Float64}}
+    base_op::Vector{Matrix{ComplexF64}}
+end
+
+"""
+param: LFT parameters
+R: Nuclear positions relative to the paramagnetic center (metal)
+"""
+function LFT(param::LFTParam, R::Vector{Vector{Float64}})
+    H_fieldfree, Mel = calc_operators(param)
+    Mel_trafo = Matrix(1.0I, 3, 3)
+    Nnuc = length(R)
+    BHF_trafo = Vector{Matrix{Float64}}(undef, Nnuc)
+    for A in 1:Nnuc
+        BHF_trafo[A] = alpha^2 * calc_dipole_matrix(R[A])
+    end
+    return LFT(H_fieldfree, Mel_trafo, BHF_trafo, Mel)
+end
+
 function create_SDs(nel::Int, norb::Int)
     nspinorb = 2*norb
     SDs = [[P] for P in 1:(nspinorb-nel+1)]
