@@ -172,6 +172,7 @@ function read_HFCmatrix(filecalcnmr::String, natoms::Int)
 end
 
 # XXXLucasXXX: Refactor this function (maybe use OutputParser)
+# At the moment, this gives the Dtensor in cm-1 -> should directly convert into atomic units (Hartree)
 function read_effectiveH(filecalcnmr::String, theory::String, Smult::Int, Dflag::Bool=false, gflag::Bool=false)
     #works for orca6
 

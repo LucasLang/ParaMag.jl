@@ -857,13 +857,14 @@ function test_PCS_PDA_finitefield_SH()
 
     Dtensor = [  3.053926    -5.555174   -16.580693;
     -5.555174    22.210495    -7.191116;
-   -16.580693    -7.191116    -0.939858]
+   -16.580693    -7.191116    -0.939858]*4.55633525e-06   # directly convert from cm-1 to Hartree
 
     gtensor = [2.1384111    0.0084976    0.0250646;
     0.0074791    2.0934328    0.0112682;
     0.0228213    0.0119502    2.1324169]
 
-    sh = MagFieldLFT.SpinHamiltonian(mult, gtensor, Dtensor)
+    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor)
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
 
     T = 298.0
     grid = lebedev_grids[20]
@@ -929,5 +930,5 @@ end
     @test test_KurlandMcGarvey_vs_finitefield_Lebedev_ord4()
     @test test_cubicresponse_spin()
     @test test_STOs()
-    #@test test_PCS_PDA_finitefield_SH()
+    @test test_PCS_PDA_finitefield_SH()
 end

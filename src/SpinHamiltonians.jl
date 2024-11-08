@@ -1,36 +1,70 @@
 """
-gtensor: Zeeman tensor parametrizing the electronic magnetic moment
-Atensor: Hyperfine coupling tensor parametrizing the magnetic field created by the electrons
-Dtensor: Zero-field splitting tensor
 mult:    Spin multiplicity (=2S+1, where S is the total spin quantum number)
+gtensor: Zeeman tensor parametrizing the electronic magnetic moment
+Dtensor: Zero-field splitting tensor
+Atensors: Hyperfine coupling tensors parametrizing the magnetic field created by the electrons
+"""
+struct SHParam
+    mult::Int64
+    gtensor::Matrix{Float64}
+    Dtensor::Matrix{Float64}
+    Atensors::Vector{Matrix{Float64}}
+    gammas::Vector{Float64}
+end
+
+"""
+Constructor with default value for Atensors: empty list.
+"""
+SHParam(mult::Integer, gtensor::Matrix, Dtensor::Matrix, Atensors=Vector{Matrix{Float64}}(), gammas=Vector{Float64}()) = SHParam(mult, gtensor, Dtensor, Atensors, gammas)
+
+"""
+H_fieldfree: The field-free Hamiltonian
+Mel_trafo:: Matrix applied to base operators to get magnetic moment operators (here: using g-tensor)
+BHF_trafo:: Matrix applied to base operators to get hyperfine field operators (here: using HFC A-tensors)
+base_op:: base operators (here: spin operators)
 """
 struct SpinHamiltonian <: CompModel
-    gtensor::Matrix{Float64}
-    Atensor::Matrix{Float64}
-    Dtensor::Matrix{Float64}
-    mult::Int64
+    H_fieldfree::HermMat
+    Mel_trafo::Matrix{Float64}
+    BHF_trafo::Vector{Matrix{Float64}}
+    base_op::Vector{Matrix{ComplexF64}}
+end
+
+function calc_Sop(S)
+    S_singlemat = calc_soperators(S)   # this is a single array with three dimensions
+    return [S_singlemat[:, :, 1], S_singlemat[:, :, 2], S_singlemat[:, :, 3]]
 end
 
 """
 Implements S^T D S
 """
-function calc_H_fieldfree(sh::SpinHamiltonian)
-    S = 0.5*(sh.mult - 1)    # Spin quantum number
+function calc_H_fieldfree(shparam::SHParam)
+    S = 0.5*(shparam.mult - 1)    # Spin quantum number
     Sop = calc_soperators(S)
-    StDS = sum(sh.Dtensor[i, j] * Sop[:, :, i] * Sop[:, :, j] for i in 1:3, j in 1:3)
-    return StDS
+    StDS = sum(shparam.Dtensor[i, j] * Sop[:, :, i] * Sop[:, :, j] for i in 1:3, j in 1:3)
+    return Hermitian(StDS)
 end
 
-function calc_magneticmoment_operator(sh::SpinHamiltonian)
-    S = 0.5*(sh.mult - 1)    # Spin quantum number
+function SpinHamiltonian(shparam::SHParam)
+    H_fieldfree = calc_H_fieldfree(shparam)
+    S = 0.5*(shparam.mult - 1)    # Spin quantum number
+    Sop = calc_Sop(S)
+    Mel_trafo = -0.5*shparam.gtensor
+    Nnuc = length(shparam.Atensors)
+    BHF_trafo = [-(1/shparam.gammas[i])*shparam.Atensors[i] for i in 1:Nnuc]
+    return SpinHamiltonian(H_fieldfree, Mel_trafo, BHF_trafo, Sop)
+end
+
+function calc_magneticmoment_operator(shparam::SHParam)
+    S = 0.5*(shparam.mult - 1)    # Spin quantum number
     Sop = calc_soperators(S)
-    Mel = [0.5*sum(sh.gtensor[i,j] * Sop[:, :, j] for j in 1:3) for i in 1:3]
+    Mel = [0.5*sum(shparam.gtensor[i,j] * Sop[:, :, j] for j in 1:3) for i in 1:3]
     return Mel
 end
 
-function calc_operators(sh::SpinHamiltonian)
-    H_fieldfree = calc_H_fieldfree(sh)
-    Mel = calc_magneticmoment_operator(sh)
+function calc_operators(shparam::SHParam)
+    H_fieldfree = calc_H_fieldfree(shparam)
+    Mel = calc_magneticmoment_operator(shparam)
     return H_fieldfree, Mel
 end
 
