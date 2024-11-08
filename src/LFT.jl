@@ -10,7 +10,7 @@ hLFT: One-electron ligand field matrix
 F: Racah parameters
 zeta: Spin-orbit coupling parameter
 """
-struct LFTParam <: CompModel
+struct LFTParam
     nel::Int64
     norb::Int64
     l::Int64
@@ -26,7 +26,7 @@ BHF_trafo:: Matrix applied to base operators to get hyperfine field operators (h
 base_op:: base operators (here: magnetic moment operators)
 """
 struct LFT <: CompModel
-    H_fieldfree::Matrix{Complex64}
+    H_fieldfree::HermMat
     Mel_trafo::Matrix{Float64}
     BHF_trafo::Vector{Matrix{Float64}}
     base_op::Vector{Matrix{ComplexF64}}
@@ -36,7 +36,7 @@ end
 param: LFT parameters
 R: Nuclear positions relative to the paramagnetic center (metal)
 """
-function LFT(param::LFTParam, R::Vector{Vector{Float64}})
+function LFT(param::LFTParam, R::Vector{Vector{Float64}}=Vector{Vector{Float64}}())
     H_fieldfree, Mel = calc_operators(param)
     Mel_trafo = Matrix(1.0I, 3, 3)
     Nnuc = length(R)

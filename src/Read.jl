@@ -171,7 +171,7 @@ function read_HFCmatrix(filecalcnmr::String, natoms::Int)
     return Aorb
 end
 
-
+# XXXLucasXXX: Refactor this function (maybe use OutputParser)
 function read_effectiveH(filecalcnmr::String, theory::String, Smult::Int, Dflag::Bool=false, gflag::Bool=false)
     #works for orca6
 

@@ -36,7 +36,7 @@ end
 
 lebedev_grids = setup_Lebedev_grids()
 
-const HermMat = Hermitian{T, Matrix{T}} where T <: Number  # Complex Hermitian (or real symmetric) matrix
+const HermMat{T<:Number} = Hermitian{T, Matrix{T}} # Complex Hermitian (or real symmetric) matrix
 
 """
 Note: this function assumes that the field dependent Hamiltonian is of the form
@@ -205,8 +205,8 @@ B0: Magnitude of the external magnetic field (atomic units)
 T: Temperature (Kelvin)
 """
 function calc_Bind(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
-    H_fieldfree, Mel = calc_operators(model)
-    integrands(theta, chi) = calc_integrands(theta, chi, H_fieldfree, Mel, R, B0, T)
+    Mel = calc_Mel(model)
+    integrands(theta, chi) = calc_integrands(theta, chi, model.H_fieldfree, Mel, R, B0, T)
     integrals = integrate_spherical(integrands, grid)
     numerators = integrals[1:(end-1)]
     D = integrals[end]   # denominator (normalization)
@@ -392,11 +392,15 @@ function calc_F_deriv4(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     return real(Fderiv4_symmetrized)
 end
 
+function calc_Mel(model::CompModel)
+    return [sum([model.Mel_trafo[i,j] * model.base_op[j] for j in 1:3]) for i in 1:3]
+end
+
 function F_deriv_param2states(calc_F_derivx::Function)
     function calc_F_deriv_param(model::CompModel, T::Real, B0_mol::Vector{Float64})
-        H_fieldfree, Mel = calc_operators(model)
+        Mel = calc_Mel(model)
         Hderiv = -Mel
-        energies, states = calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
+        energies, states = calc_solutions_magfield(model.H_fieldfree, Mel, B0_mol)
         return calc_F_derivx(energies, states, Hderiv, T)
     end
     return calc_F_deriv_param
