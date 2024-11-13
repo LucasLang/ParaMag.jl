@@ -1,7 +1,3 @@
-const kB = 3.166811563e-6    # Boltzmann constant in Eh/K
-const alpha = 0.0072973525693  # fine structure constant
-const mu0 = 4pi*alpha^2
-
 """
 nel: Number of electrons
 norb: Number of orbitals (=2l+1)

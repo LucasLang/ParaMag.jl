@@ -68,7 +68,10 @@ function calc_operators(shparam::SHParam)
     return H_fieldfree, Mel
 end
 
-function calc_dyadics(s::Float64, D::Matrix{Float64}, T::Real, quadruple::Bool)
+"""
+D-tensor has to be provided in atomic units! (not the more common cm-1)
+"""
+function calc_dyadics(s::Float64, D::Matrix{Float64}, T::Real, quadruple::Bool=false)
     S = calc_soperators(s)
 
     Hderiv = [S[:,:,1], S[:,:,2], S[:,:,3]]
@@ -79,11 +82,11 @@ function calc_dyadics(s::Float64, D::Matrix{Float64}, T::Real, quadruple::Bool)
     energies = solution.values
     states = solution.vectors
 
-    SS = -calc_F_deriv2(energies, states, Hderiv, T)
+    SS = calc_F_deriv2(energies, states, Hderiv, T)
 
     if quadruple
 
-        SSSS = -calc_F_deriv4(energies, states, Hderiv, T)
+        SSSS = calc_F_deriv4(energies, states, Hderiv, T)
 
         return SS, SSSS
     else
