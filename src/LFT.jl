@@ -87,61 +87,39 @@ function U_complex2real(l::Int)
     return U
 end
 
-# XXXLucasXXX: These c matrices can also be expressed in a simpler way using the Wigner-Eckart theorem!
-c1_0 = Matrix(1.0I, 3, 3)
-c1_2 = [-1 sqrt(3) -sqrt(6);
-        -sqrt(3) 2 -sqrt(3);
-        -sqrt(6) sqrt(3) -1]
-
-c2_0 = Matrix(1.0I, 5, 5)
-c2_2 = [-2 sqrt(6) -2 0 0;
-        -sqrt(6) 1 1 -sqrt(6) 0;
-        -2 -1 2 -1 -2;
-        0 -sqrt(6) 1 1 -sqrt(6);
-        0 0 -2 sqrt(6) -2]
-c2_4 = [1 -sqrt(5) sqrt(15) -sqrt(35) sqrt(70);
-        sqrt(5) -4 sqrt(30) -sqrt(40) sqrt(35);
-        sqrt(15) -sqrt(30) 6 -sqrt(30) sqrt(15);
-        sqrt(35) -sqrt(40) sqrt(30) -4 sqrt(5);
-        sqrt(70) -sqrt(35) sqrt(15) -sqrt(5) 1]
-
-c3_0 = Matrix(1.0I, 7, 7)
-c3_2 = [-5 5 -sqrt(10) 0 0 0 0;
-        -5 0 sqrt(15) -sqrt(20) 0 0 0;
-        -sqrt(10) -sqrt(15) 3 sqrt(2) -sqrt(24) 0 0;
-        0 -sqrt(20) -sqrt(2) 4 -sqrt(2) -sqrt(20) 0;
-        0 0 -sqrt(24) sqrt(2) 3 -sqrt(15) -sqrt(10);
-        0 0 0 -sqrt(20) sqrt(15) 0 -5;
-        0 0 0 0 -sqrt(10) 5 -5]
-c3_4 = [3 -sqrt(30) sqrt(54) -sqrt(63) sqrt(42) 0 0;
-        sqrt(30) -7 4*sqrt(2) -sqrt(3) -sqrt(14) sqrt(70) 0;
-        sqrt(54) -4*sqrt(2) 1 sqrt(15) -sqrt(40) sqrt(14) sqrt(42);
-        sqrt(63) -sqrt(3) -sqrt(15) 6 -sqrt(15) -sqrt(3) sqrt(63);
-        sqrt(42) sqrt(14) -sqrt(40) sqrt(15) 1 -4*sqrt(2) sqrt(54);
-        0 sqrt(70) -sqrt(14) -sqrt(3) 4*sqrt(2) -7 sqrt(30);
-        0 0 sqrt(42) -sqrt(63) sqrt(54) -sqrt(30) 3]
-c3_6 = [-1 sqrt(7) -sqrt(28) sqrt(84) -sqrt(210) sqrt(462) -sqrt(924);
-        -sqrt(7) 6 -sqrt(105) 4*sqrt(14) -sqrt(378) sqrt(504) -sqrt(462);
-        -sqrt(28) sqrt(105) -15 5*sqrt(14) -sqrt(420) sqrt(378) -sqrt(210);
-        -sqrt(84) 4*sqrt(14) -5*sqrt(14) 20 -5*sqrt(14) 4*sqrt(14) -sqrt(84);
-        -sqrt(210) sqrt(378) -sqrt(420) 5*sqrt(14) -15 sqrt(105) -sqrt(28);
-        -sqrt(462) sqrt(504) -sqrt(378) 4*sqrt(14) -sqrt(105) 6 -sqrt(7);
-        -sqrt(924) sqrt(462) -sqrt(210) sqrt(84) -sqrt(28) sqrt(7) -1]
+function calc_cmatrix(l, k, rme)
+    dim = 2l+1
+    result = zeros(dim, dim)
+    mvalues = l:-1:-l
+    for row in 1:dim
+        m1 = mvalues[row]
+        for col in 1:dim
+            m2 = mvalues[col]
+            m = m1-m2
+            if (m>=(-k)) && (m<=k)
+                result[row,col] = clebschgordan(l, m2, k, m, l, m1)
+            end
+        end
+    end
+    return rme*result
+end
 
 """
 Keys are tuples (l,k), where l is the angular momentum
 quantum number (e.g. l=2 for d orbitals) and k the index
 of the Slater--Condon parameters.
+These c matrices are without the fractional prefactors. The latter are absorbed
+into the Slater--Condon parameters (i.e., with SUBSCRIPT k).
 """
-c_matrices = Dict((1,0) => c1_0,
-                  (1,2) => c1_2,
-                  (2,0) => c2_0,
-                  (2,2) => c2_2,
-                  (2,4) => c2_4,
-                  (3,0) => c3_0,
-                  (3,2) => c3_2,
-                  (3,4) => c3_4,
-                  (3,6) => c3_6)
+c_matrices = Dict((1,0) => calc_cmatrix(1, 0, 1.0),
+                  (1,2) => calc_cmatrix(1, 2, -sqrt(10)),
+                  (2,0) => calc_cmatrix(2, 0, 1.0),
+                  (2,2) => calc_cmatrix(2, 2, -sqrt(14)),
+                  (2,4) => calc_cmatrix(2, 4, sqrt(126)),
+                  (3,0) => calc_cmatrix(3, 0, 1.0),
+                  (3,2) => calc_cmatrix(3, 2, -sqrt(60)),
+                  (3,4) => calc_cmatrix(3, 4, sqrt(198)),
+                  (3,6) => calc_cmatrix(3, 6, -sqrt(1716)))
 
 """
 Convert Racah parameters for a shell of d orbitals
