@@ -101,7 +101,7 @@ function calc_average_magneticmoment(energies::Vector{Float64}, states::Matrix{C
     Zel = sum(energies_exp)   # canonical partition function
     Mel_eigenbasis = [states'*Melcomp*states for Melcomp in Mel]
     Mel_avg = [sum(energies_exp .* diag(Mel_eigenbasis_comp))/Zel for Mel_eigenbasis_comp in Mel_eigenbasis]
-    @assert norm(imag(Mel_avg)) < 1e-12    # energies need to be real
+    @assert norm(imag(Mel_avg))/norm(real(Mel_avg)) < 1e-8    # energies need to be real
     return real(Mel_avg)
 end
 
@@ -111,7 +111,7 @@ function calc_F_deriv1(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     Zel = sum(energies_exp)   # canonical partition function
     Hderiv_eigenbasis = [states'*Hderiv_comp*states for Hderiv_comp in Hderiv]
     Fderiv1 = [sum(energies_exp .* diag(Hderiv_eigenbasis_comp))/Zel for Hderiv_eigenbasis_comp in Hderiv_eigenbasis]
-    @assert norm(imag(Fderiv1)) < 1e-12    # need to be real
+    @assert norm(imag(Fderiv1))/norm(real(Fderiv1)) < 1e-8    # need to be real
     return real(Fderiv1)
 end
 
@@ -287,7 +287,7 @@ function calc_F_deriv2(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     Fderiv1 = calc_F_deriv1(energies, states, Hderiv, T)
     Fderiv2 += 0.5*beta* Fderiv1*Fderiv1'
     Fderiv2 += transpose(Fderiv2)  # symmetrization
-    @assert norm(imag(Fderiv2)) < 1e-5
+    @assert norm(imag(Fderiv2))/norm(real(Fderiv2)) < 1e-8
     return real(Fderiv2)
 end
 
@@ -335,7 +335,7 @@ function calc_F_deriv3(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     for k in 1:factorial(nindices)   # loop over all permutations of three indices
         Fderiv3_symmetrized += permutedims(Fderiv3, Permutation(nindices,k))
     end
-    @assert norm(imag(Fderiv3_symmetrized)) < 1e-4
+    @assert norm(imag(Fderiv3_symmetrized))/norm(real(Fderiv3_symmetrized)) < 1e-8
     return real(Fderiv3_symmetrized)
 end
 
@@ -388,7 +388,7 @@ function calc_F_deriv4(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     for k in 1:factorial(nindices)   # loop over all permutations of three indices
         Fderiv4_symmetrized += permutedims(Fderiv4, Permutation(nindices,k))
     end
-    @assert norm(imag(Fderiv4_symmetrized))/norm(real(Fderiv4_symmetrized)) < 1e-8    #1e-10
+    @assert norm(imag(Fderiv4_symmetrized))/norm(real(Fderiv4_symmetrized)) < 1e-8
     return real(Fderiv4_symmetrized)
 end
 
