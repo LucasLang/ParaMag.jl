@@ -847,7 +847,7 @@ function test_cubicresponse_spin()
 end
 
 function test_STOs()
-    TWE = MagFieldLFT.calc_STOs_WE(3.0)
+    TWE = MagFieldLFT.calc_STOs_WE(3.0, MagFieldLFT.RME_Lucas)
     Trec = MagFieldLFT.calc_STOs_recursive(3.0)
     return norm(Trec[(4,-3)]-TWE[(4,-3)]) < 1e-10 && norm(Trec[(5,2)]-TWE[(5,2)]) < 1e-10
 end
@@ -873,6 +873,16 @@ function test_PCS_PDA_finitefield_SH()
     finitefield_shifts = MagFieldLFT.estimate_shifts_finitefield(sh, R_selected_NiSAL, B0, T, grid)
     println(finitefield_shifts)
     return false
+end
+
+# Test against analytical expressions from Smith and Thornley (1966)
+function test_Wybourne()
+    J = 5
+    Jz, Jp, Jm = MagFieldLFT.calc_lops_complex(J)
+    T_Wyb = MagFieldLFT.calc_STOs_WE(J, MagFieldLFT.RME_Wybourne)
+    ref_3_0 = 0.5*(5*Jz^3 - (3J*(J+1)-1)*Jz)
+    ref_3_3 = -sqrt(5/16)*Jp^3
+    return norm(T_Wyb[(3,0)]-ref_3_0)<1e-5 && norm(T_Wyb[(3,3)]-ref_3_3)<1e-5
 end
 
 @testset "MagFieldLFT.jl" begin
@@ -931,4 +941,5 @@ end
     @test test_cubicresponse_spin()
     @test test_STOs()
     @test test_PCS_PDA_finitefield_SH()
+    @test test_Wybourne()
 end

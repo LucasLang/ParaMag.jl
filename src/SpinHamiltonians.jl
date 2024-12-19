@@ -212,14 +212,24 @@ function calc_STOs_recursive(l)
     return T
 end
 
+function RME_Lucas(l, k)
+    return sqrt((factorial(big(k)))^2 * factorial(big(Int64(2l+k+1))) / Int64(2l+1) / 2^k / factorial(big(2k)) / factorial(big(Int64(2l-k))))
+end
+
+function RME_Wybourne(l, k)
+    return sqrt(factorial(big(Int64(2l+k+1))) / Int64(2l+1) / factorial(big(Int64(2l-k)))) / 2^k
+end
+
 # use Wigner-Eckart theorem to calculate the STOs
-function calc_STOs_WE(l)
+# default normalization (as given by the function that calculates the RME)
+# is Wybourne (same as Buckmaster and Smith/Thornley)
+function calc_STOs_WE(l, RME_func=RME_Wybourne)
     dim = Int64(2l+1)
     offset = l+1
     T = Dict()
     for k in 0:Int64(2l), m in -k:k
         Tkm = zeros(dim, dim)
-        RME = sqrt((factorial(k))^2 * factorial(Int64(2l+k+1)) / Int64(2l+1) / 2^k / factorial(2k) / factorial(Int64(2l-k)))
+        RME = RME_func(l, k)
         for M in -l:l, M_prime in -l:l
                 Tkm[Int64(offset-M), Int64(offset-M_prime)] = clebschgordan(l, M_prime, k, m, l, M) * RME
         end
