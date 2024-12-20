@@ -1,6 +1,7 @@
 const kB = 3.166811563e-6    # Boltzmann constant in Eh/K
 const alpha = 0.0072973525693  # fine structure constant
 const mu0 = 4pi*alpha^2
+const cmm1_Hartree = 4.55633525e-06   # cm-1 / Ha
 
 # values for the following two dictionaries are taken from Table 1 of
 # Parker et al., Acc. Chem. Res. 2020, 53, 1520-1534.

@@ -405,6 +405,10 @@ function read_integrals_so_f(fileint::String)   #could be adjuted to be used for
 
 end
 
+"""
+We assume that the file contains the parameters in cm^-1 (as is usual).
+Internally, we use Hartree atomic units.
+"""
 function read_Bkq(filename::String, Ln::String)
     lines = open(readlines, filename)
     bkq_dict = Dict{Tuple{Int, Int}, Complex{Float64}}()
@@ -420,8 +424,8 @@ function read_Bkq(filename::String, Ln::String)
 
             k = parse(Int, parts[1])
             q = parse(Int, parts[2])
-            Re = parse(Float64, parts[3])
-            Im = parse(Float64, parts[4])
+            Re = parse(Float64, parts[3])*cmm1_Hartree   # convert to Hartree
+            Im = parse(Float64, parts[4])*cmm1_Hartree   # convert to Hartree
             if k == 2
                 Re *= theta_factors[(Ln, 2)]
                 Im *= theta_factors[(Ln, 2)]
@@ -459,6 +463,13 @@ function read_Bkq(filename::String, Ln::String)
             end
         catch e
             error("Error parsing line $i: $line\n$e")
+        end
+    end
+    for k in [2,4,6]
+        for q in -k:k
+            if !haskey(bkq_dict, (k, q))
+                bkq_dict[(k, q)] = 0.0
+            end
         end
     end
     return bkq_dict

@@ -857,7 +857,7 @@ function test_PCS_PDA_finitefield_SH()
 
     Dtensor = [  3.053926    -5.555174   -16.580693;
     -5.555174    22.210495    -7.191116;
-   -16.580693    -7.191116    -0.939858]*4.55633525e-06   # directly convert from cm-1 to Hartree
+   -16.580693    -7.191116    -0.939858]*MagFieldLFT.cmm1_Hartree   # directly convert from cm-1 to Hartree
 
     gtensor = [2.1384111    0.0084976    0.0250646;
     0.0074791    2.0934328    0.0112682;
@@ -901,6 +901,31 @@ function test_JJbeta()
     JJ_deriv = MagFieldLFT.JJbeta(J)
     ref = -(J*(J+1)/3)*Matrix(1.0I, 3, 3)
     return norm(JJ_deriv-ref) <1e-10
+end
+
+# tested correctness of JJbeta2 by comparing with exact dyadic minus JJbeta at very high T
+function test_JJbeta2()
+    T = 298.0       # temperature in Kelvin
+    J = MagFieldLFT.ground_J["Tb"]
+    Bkq = MagFieldLFT.read_Bkq("Bkq_Tb", "Tb")
+    JJderiv2 = MagFieldLFT.JJbeta2(Bkq, J)
+    ref = [-0.008626405358262486 0.00031406199837191793 0.000584764690998459;
+    0.00031406199837191793 -0.0037511527284775164 7.13592610231119e-5;
+    0.000584764690998459 7.13592610231119e-5 0.012377558086740003]
+    return norm(JJderiv2-ref) < 1e-10
+end
+
+# tested correctness of calc_dyadics_Wyb by comparing with sum of JJbeta and JJbeta2 terms (analytical)
+# at very high T
+function test_calc_dyadics_Wyb()
+    T = 298.0       # temperature in Kelvin
+    J = MagFieldLFT.ground_J["Tb"]
+    Bkq = MagFieldLFT.read_Bkq("Bkq_Tb", "Tb")
+    exact_dyadics = MagFieldLFT.calc_dyadics_Wyb(J, Bkq, T)
+    ref = [-19983.04038430544 368.8536285344071 -131.44423778299375;
+    368.8536285344071 -15564.84416103268 -273.97794073360933;
+    -131.44423778299375 -273.97794073360933 -8543.79795610935]
+    return norm(exact_dyadics - ref) < 1e-10
 end
 
 @testset "MagFieldLFT.jl" begin
@@ -962,4 +987,6 @@ end
     @test test_Wybourne()
     @test test_H_fieldfree_Wyb()
     @test test_JJbeta()
+    @test test_JJbeta2()
+    @test test_calc_dyadics_Wyb()
 end

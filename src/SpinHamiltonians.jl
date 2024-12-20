@@ -244,9 +244,10 @@ Later: remove Wyb and use dispatch based on type.
 Bkq: dictionary with the ligand field parameters
 J: Total angular momentum (or spin, for TM complexes) quantum number
 """
-function calc_H_fieldfree_Wyb(Bkq::Dict{Tuple{Int, Int}, Complex{Float64}}, J)
+function calc_H_fieldfree_Wyb(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
     Tkq = calc_STOs_WE(J)
-    return sum([Bkq[key]*Tkq[key] for key in keys(Bkq)])
+    H_fieldfree = sum([Bkq[key]*Tkq[key] for key in keys(Bkq)])
+    return Hermitian(H_fieldfree)
 end
 
 function calc_H_fieldfree_Wyb(filename::String, Ln::String)
@@ -267,14 +268,29 @@ function symtensor_trafo_sph_Cart(tensor_0_0, tensor_2)
     return real(tensor)
 end
 
+function calc_dyadics_Wyb(J::Real, Bkq::Dict{Tuple{Int, Int}, ComplexF64}, T::Real)
+    Jop = calc_soperators(J)
+    Hderiv = [Jop[:,:,1], Jop[:,:,2], Jop[:,:,3]]
+    H_fieldfree = calc_H_fieldfree_Wyb(Bkq, J)
+    solution = eigen(H_fieldfree)
+    energies = solution.values
+    states = solution.vectors
+    return calc_F_deriv2(energies, states, Hderiv, T)
+end
+
 """
 First derivative of the spin dyadic with respect to beta.
 """
 function JJbeta(J)
-    JJbeta_0_0 = J*(J+1)/sqrt(3)
-    JJbeta_2 = Dict(q => 0.0 for q in -2:2)
-    return symtensor_trafo_sph_Cart(JJbeta_0_0, JJbeta_2)
+    JJderiv_0_0 = J*(J+1)/sqrt(3)
+    JJderiv_2 = Dict(q => 0.0 for q in -2:2)
+    return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
 end
 
-#function JJbeta2(Bkq::Dict{Tuple{Int, Int}, Complex{Float64}}, J)
-#end
+function JJbeta2(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
+    JJderiv_0_0 = 0.0
+    # The Wybourne ligand field parameters are not proper spherical tensors.
+    # Therefore, we have to take the complex conjugate.
+    JJderiv_2 = Dict(q => J*(J+1)*(2J+3)*(2J-1)/5/sqrt(6) * conj(Bkq[(2,q)]) for q in -2:2)
+    return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
+end
