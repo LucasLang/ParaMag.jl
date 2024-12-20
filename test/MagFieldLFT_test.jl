@@ -896,6 +896,13 @@ function test_H_fieldfree_Wyb()
     return norm(values-ref)<1e-10
 end
 
+function test_JJbeta()
+    J = 2.5
+    JJ_deriv = MagFieldLFT.JJbeta(J)
+    ref = -(J*(J+1)/3)*Matrix(1.0I, 3, 3)
+    return norm(JJ_deriv-ref) <1e-10
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -954,4 +961,5 @@ end
     @test test_PCS_PDA_finitefield_SH()
     @test test_Wybourne()
     @test test_H_fieldfree_Wyb()
+    @test test_JJbeta()
 end

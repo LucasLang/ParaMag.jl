@@ -254,3 +254,27 @@ function calc_H_fieldfree_Wyb(filename::String, Ln::String)
     Bkq = read_Bkq(filename, Ln)
     return calc_H_fieldfree_Wyb(Bkq, J)
 end
+
+function symtensor_trafo_sph_Cart(tensor_0_0, tensor_2)
+    tensor = Matrix{ComplexF64}(undef, 3, 3)
+    tensor[1,1] = 0.5*(tensor_2[2] + tensor_2[-2]) - tensor_2[0]/sqrt(6) - tensor_0_0/sqrt(3)
+    tensor[2,2] = -0.5*(tensor_2[2] + tensor_2[-2]) - tensor_2[0]/sqrt(6) - tensor_0_0/sqrt(3)
+    tensor[3,3] = 2*tensor_2[0]/sqrt(6) - tensor_0_0/sqrt(3)
+    tensor[1,2] = tensor[2,1] = (-im/2)*(tensor_2[2] - tensor_2[-2])
+    tensor[1,3] = tensor[3,1] = -0.5*(tensor_2[1] - tensor_2[-1])
+    tensor[2,3] = tensor[3,2] = (im/2)*(tensor_2[1] + tensor_2[-1])
+    @assert norm(imag(tensor))/norm(real(tensor)) <1e-10
+    return real(tensor)
+end
+
+"""
+First derivative of the spin dyadic with respect to beta.
+"""
+function JJbeta(J)
+    JJbeta_0_0 = J*(J+1)/sqrt(3)
+    JJbeta_2 = Dict(q => 0.0 for q in -2:2)
+    return symtensor_trafo_sph_Cart(JJbeta_0_0, JJbeta_2)
+end
+
+#function JJbeta2(Bkq::Dict{Tuple{Int, Int}, Complex{Float64}}, J)
+#end
