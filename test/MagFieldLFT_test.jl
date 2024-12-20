@@ -885,6 +885,18 @@ function test_Wybourne()
     return norm(T_Wyb[(3,0)]-ref_3_0)<1e-5 && norm(T_Wyb[(3,3)]-ref_3_3)<1e-5
 end
 
+function test_H_fieldfree_Wyb()
+    J=6   # total angular momentum of the Tb(III) ground multiplet
+    H_fieldfree = MagFieldLFT.calc_H_fieldfree_Wyb("Bkq_Tb", J)
+    values = eigvals(H_fieldfree)
+    sort!(values)
+    values = values .- values[1]
+    ref = [0.0, 0.18236297983901295, 72.82195951712006, 74.04535451377458,
+    172.9690387781115, 191.64087572361137, 239.46631221328218, 245.49361237777234,
+    263.3118254286973, 330.5619011015835, 339.36452977217255, 416.54655566755685, 418.04462983585125]
+    return norm(values-ref)<1e-10
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -942,4 +954,5 @@ end
     @test test_STOs()
     @test test_PCS_PDA_finitefield_SH()
     @test test_Wybourne()
+    @test test_H_fieldfree_Wyb()
 end

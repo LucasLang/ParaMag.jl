@@ -404,3 +404,62 @@ function read_integrals_so_f(fileint::String)   #could be adjuted to be used for
     return Integrals
 
 end
+
+function read_Bkq(filename::String)
+    lines = open(readlines, filename)
+    bkq_dict = Dict{Tuple{Int, Int}, Complex{Float64}}()
+
+    for (i, line) in enumerate(lines)
+        line = strip(line)
+        if startswith(line, "#")
+            continue
+        end
+        # Parse the line for k, q, Re, Im
+        try
+            parts = split(line)
+
+            k = parse(Int, parts[1])
+            q = parse(Int, parts[2])
+            Re = parse(Float64, parts[3])
+            Im = parse(Float64, parts[4])
+            if k == 2
+                Re *= -1/99
+                Im *= -1/99
+            elseif k == 4
+                Re *= 2/11/1485
+                Im *= 2/11/1485
+            elseif k == 6
+                Re *= -1/13/33/2079
+                Im *= -1/13/33/2079
+            end
+
+            bkq = Re + im * Im
+            bkmq = (-1)^q * (Re - im * Im)
+            # Add entries to the dictionary
+            if q == 0
+                if haskey(bkq_dict, (k, q))
+                    @warn "Duplicate key (k, q) = ($k, $q) found at line $i; skipping."
+                else
+                    if imag(bkq)>1e-10
+                        @warn "Imaginary part specified for (k, q) = ($k, $q); it will be ignored."
+                    end
+                    bkq_dict[(k, q)] = real(bkq)
+                end
+            else
+                if haskey(bkq_dict, (k, q))
+                    @warn "Duplicate key (k, q) = ($k, $q) found at line $i; skipping."
+                else
+                    bkq_dict[(k, q)] = bkq
+                end
+                if haskey(bkq_dict, (k, -q))
+                    @warn "Duplicate key (k, q) = ($k, $(-q) found at line $i; skipping."
+                else
+                    bkq_dict[(k, -q)] = bkmq
+                end
+            end
+        catch e
+            error("Error parsing line $i: $line\n$e")
+        end
+    end
+    return bkq_dict
+end

@@ -237,3 +237,19 @@ function calc_STOs_WE(l, RME_func=RME_Wybourne)
     end
     return T
 end
+
+"""
+Calculate H_fieldfree using Wybourne parametrization.
+Later: remove Wyb and use dispatch based on type.
+Bkq: dictionary with the ligand field parameters
+J: Total angular momentum (or spin, for TM complexes) quantum number
+"""
+function calc_H_fieldfree_Wyb(Bkq::Dict{Tuple{Int, Int}, Complex{Float64}}, J)
+    Tkq = calc_STOs_WE(J)
+    return sum([Bkq[key]*Tkq[key] for key in keys(Bkq)])
+end
+
+function calc_H_fieldfree_Wyb(filename::String, J)
+    Bkq = read_Bkq(filename)
+    return calc_H_fieldfree_Wyb(Bkq, J)
+end
