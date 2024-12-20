@@ -294,3 +294,41 @@ function JJbeta2(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
     JJderiv_2 = Dict(q => J*(J+1)*(2J+3)*(2J-1)/5/sqrt(6) * conj(Bkq[(2,q)]) for q in -2:2)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
 end
+
+"""
+Couple two ligand field parameters to a new spherical tensor of order K.
+"""
+function Bk_otimes_Bk(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, k, ktilde, K)
+    result = Dict(Q => 0.0*im for Q in -K:K)
+    for q in -k:k
+        for qtilde in -ktilde:ktilde
+            for Q in -K:K
+                # The Wybourne ligand field parameters are not proper spherical tensors.
+                # Therefore, we have to take the complex conjugate.
+                result[Q] += clebschgordan(k, q, ktilde, qtilde, K, Q)*conj(Bkq[(k, q)])*conj(Bkq[(ktilde, qtilde)])
+            end
+        end
+    end
+    return result
+end
+
+function JJbeta3(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
+    JJderiv_0_0 = 0.0
+    for k in [2,4,6]
+        JJderiv_0_0 += (-1/2/sqrt(3))*k*(k+1)/sqrt(2k+1) * RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k, 0)[0]
+    end
+    JJderiv_2 = Dict(Q => 0.0*im for Q in -2:2)
+    # first: k=ktilde contribution to anisotropic part of dyadic
+    for k in [2,4,6]
+        for Q in -2:2
+            JJderiv_2[Q] += sqrt(1/30)*sqrt(k*(k+1)/(2k-1)/(2k+1)/(2k+3))*(6J*(J+1)-2.5*k*(k+1)+3)*RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k, 2)[Q]
+        end
+    end
+    # second: |k-ktilde|=2 contribution to anisotropic part of dyadic
+    for k in [4,6]
+        for Q in -2:2
+            JJderiv_2[Q] += -6/sqrt(5) * sqrt(k*(k-1)/(2k+1)/(2k-1)/(2k-3))*RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k-2, 2)[Q]
+        end
+    end
+    return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
+end

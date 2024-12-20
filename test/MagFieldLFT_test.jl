@@ -928,6 +928,22 @@ function test_calc_dyadics_Wyb()
     return norm(exact_dyadics - ref) < 1e-10
 end
 
+# we choose an unphysically high temperature here in order to
+# suppress higher powers in beta in the exact dyadic
+function test_JJbeta3()
+    T = 100000      # temperature in Kelvin
+    J = MagFieldLFT.ground_J["Tb"]
+    Bkq = MagFieldLFT.read_Bkq("Bkq_Tb", "Tb")
+    JJderiv1 = MagFieldLFT.JJbeta(J)
+    JJderiv2 = MagFieldLFT.JJbeta2(Bkq, J)
+    JJderiv3 = MagFieldLFT.JJbeta3(Bkq, J)
+    exact_dyadics = MagFieldLFT.calc_dyadics_Wyb(J, Bkq, T)
+    beta = 1/MagFieldLFT.kB/T
+    residual = exact_dyadics - JJderiv1*beta - 0.5*JJderiv2*beta^2
+    beta3term = JJderiv3*beta^3/6
+    return norm(residual - beta3term)/norm(residual) <1e-2
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -989,4 +1005,5 @@ end
     @test test_JJbeta()
     @test test_JJbeta2()
     @test test_calc_dyadics_Wyb()
+    @test test_JJbeta3()
 end
