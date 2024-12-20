@@ -405,7 +405,7 @@ function read_integrals_so_f(fileint::String)   #could be adjuted to be used for
 
 end
 
-function read_Bkq(filename::String)
+function read_Bkq(filename::String, Ln::String)
     lines = open(readlines, filename)
     bkq_dict = Dict{Tuple{Int, Int}, Complex{Float64}}()
 
@@ -423,14 +423,14 @@ function read_Bkq(filename::String)
             Re = parse(Float64, parts[3])
             Im = parse(Float64, parts[4])
             if k == 2
-                Re *= -1/99
-                Im *= -1/99
+                Re *= theta_factors[(Ln, 2)]
+                Im *= theta_factors[(Ln, 2)]
             elseif k == 4
-                Re *= 2/11/1485
-                Im *= 2/11/1485
+                Re *= theta_factors[(Ln, 4)]
+                Im *= theta_factors[(Ln, 4)]
             elseif k == 6
-                Re *= -1/13/33/2079
-                Im *= -1/13/33/2079
+                Re *= theta_factors[(Ln, 6)]
+                Im *= theta_factors[(Ln, 6)]
             end
 
             bkq = Re + im * Im

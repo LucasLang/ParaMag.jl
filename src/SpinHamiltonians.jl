@@ -249,7 +249,8 @@ function calc_H_fieldfree_Wyb(Bkq::Dict{Tuple{Int, Int}, Complex{Float64}}, J)
     return sum([Bkq[key]*Tkq[key] for key in keys(Bkq)])
 end
 
-function calc_H_fieldfree_Wyb(filename::String, J)
-    Bkq = read_Bkq(filename)
+function calc_H_fieldfree_Wyb(filename::String, Ln::String)
+    J = ground_J[Ln]
+    Bkq = read_Bkq(filename, Ln)
     return calc_H_fieldfree_Wyb(Bkq, J)
 end

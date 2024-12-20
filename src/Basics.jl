@@ -1,7 +1,3 @@
-const kB = 3.166811563e-6    # Boltzmann constant in Eh/K
-const alpha = 0.0072973525693  # fine structure constant
-const mu0 = 4pi*alpha^2
-
 """
 Calculate lz operator in basis of complex atomic orbitals.
 """

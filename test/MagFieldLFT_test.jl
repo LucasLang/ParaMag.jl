@@ -886,8 +886,7 @@ function test_Wybourne()
 end
 
 function test_H_fieldfree_Wyb()
-    J=6   # total angular momentum of the Tb(III) ground multiplet
-    H_fieldfree = MagFieldLFT.calc_H_fieldfree_Wyb("Bkq_Tb", J)
+    H_fieldfree = MagFieldLFT.calc_H_fieldfree_Wyb("Bkq_Tb", "Tb")
     values = eigvals(H_fieldfree)
     sort!(values)
     values = values .- values[1]

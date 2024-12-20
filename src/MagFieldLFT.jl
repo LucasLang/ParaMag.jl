@@ -5,6 +5,7 @@ using LinearAlgebra, Permutations, OutputParser, DelimitedFiles, Printf, TensorO
 export read_AILFT_params_ORCA, LFTParam, lebedev_grids
 export calc_dyadics
 
+include("Constants.jl")
 include("Basics.jl")
 include("MagProp.jl")
 include("Read.jl")
