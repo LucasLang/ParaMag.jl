@@ -408,8 +408,9 @@ end
 """
 We assume that the file contains the parameters in cm^-1 (as is usual).
 Internally, we use Hartree atomic units.
+This version is for complex parameters (which multiply spherical tensor operators).
 """
-function read_Bkq(filename::String, Ln::String)
+function read_Bkq_complex(filename::String, Ln::String)
     lines = open(readlines, filename)
     bkq_dict = Dict{Tuple{Int, Int}, Complex{Float64}}()
 
@@ -473,4 +474,67 @@ function read_Bkq(filename::String, Ln::String)
         end
     end
     return bkq_dict
+end
+
+"""
+We assume that the file contains the parameters in cm^-1 (as is usual).
+Internally, we use Hartree atomic units.
+This version is for real parameters (which multiply tesseral tensor operators).
+"""
+function read_Bkq_real(filename::String, Ln::String)
+    lines = open(readlines, filename)
+    bkq_dict = Dict{Tuple{Int, Int}, Float64}()
+
+    for (i, line) in enumerate(lines)
+        line = strip(line)
+        if startswith(line, "#")
+            continue
+        end
+        # Parse the line for k, q, value
+        try
+            parts = split(line)
+
+            k = parse(Int, parts[1])
+            q = parse(Int, parts[2])
+            value = parse(Float64, parts[3])*cmm1_Hartree   # convert to Hartree
+
+            if !(k in [2,4,6])
+                error("k may only take the values 2, 4, and 6!")
+            end
+            if q<-k || q>k
+                error("q may only take values between -k and k!")
+            end
+
+            value *= theta_factors[(Ln, k)]
+
+            # Add entries to the dictionary
+            if haskey(bkq_dict, (k, q))
+                @warn "Duplicate key (k, q) = ($k, $q) found at line $i; skipping."
+            else
+                bkq_dict[(k, q)] = value
+            end
+        catch e
+            error("Error parsing line $i: $line\n$e")
+        end
+    end
+    for k in [2,4,6]
+        for q in -k:k
+            if !haskey(bkq_dict, (k, q))
+                bkq_dict[(k, q)] = 0.0
+            end
+        end
+    end
+    return bkq_dict
+end
+
+function Bkq_real2complex(bkq_real)
+    bkq_complex = Dict{Tuple{Int, Int}, Complex{Float64}}()
+    for k in [2,4,6]
+        bkq_complex[(k, 0)] = bkq_real[(k, 0)]
+        for q in 1:k
+            bkq_complex[(k, q)] = bkq_real[(k, q)] + im*bkq_real[(k, -q)]
+            bkq_complex[(k, -q)] = (-1)^q * conj(bkq_complex[(k, q)])
+        end
+    end
+    return bkq_complex
 end

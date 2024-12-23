@@ -250,10 +250,17 @@ function calc_H_fieldfree_Wyb(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
     return Hermitian(H_fieldfree)
 end
 
-function calc_H_fieldfree_Wyb(filename::String, Ln::String)
+function calc_H_fieldfree_Wyb_complex(filename::String, Ln::String)
     J = ground_J[Ln]
-    Bkq = read_Bkq(filename, Ln)
+    Bkq = read_Bkq_complex(filename, Ln)
     return calc_H_fieldfree_Wyb(Bkq, J)
+end
+
+function calc_H_fieldfree_Wyb_real(filename::String, Ln::String)
+    J = ground_J[Ln]
+    Bkq_real = read_Bkq_real(filename, Ln)
+    Bkq_complex = Bkq_real2complex(Bkq_real)
+    return calc_H_fieldfree_Wyb(Bkq_complex, J)
 end
 
 function symtensor_trafo_sph_Cart(tensor_0_0, tensor_2)

@@ -886,11 +886,11 @@ function test_Wybourne()
 end
 
 function test_H_fieldfree_Wyb()
-    H_fieldfree = MagFieldLFT.calc_H_fieldfree_Wyb("Bkq_Tb", "Tb")
+    H_fieldfree = MagFieldLFT.calc_H_fieldfree_Wyb_complex("Bkq_Tb", "Tb")
     values = eigvals(H_fieldfree)
     sort!(values)
     values = values .- values[1]
-    ref = [0.0, 0.18236297983901295, 72.82195951712006, 74.04535451377458,
+    ref = MagFieldLFT.cmm1_Hartree*[0.0, 0.18236297983901295, 72.82195951712006, 74.04535451377458,
     172.9690387781115, 191.64087572361137, 239.46631221328218, 245.49361237777234,
     263.3118254286973, 330.5619011015835, 339.36452977217255, 416.54655566755685, 418.04462983585125]
     return norm(values-ref)<1e-10
@@ -907,7 +907,7 @@ end
 function test_JJbeta2()
     T = 298.0       # temperature in Kelvin
     J = MagFieldLFT.ground_J["Tb"]
-    Bkq = MagFieldLFT.read_Bkq("Bkq_Tb", "Tb")
+    Bkq = MagFieldLFT.read_Bkq_complex("Bkq_Tb", "Tb")
     JJderiv2 = MagFieldLFT.JJbeta2(Bkq, J)
     ref = [-0.008626405358262486 0.00031406199837191793 0.000584764690998459;
     0.00031406199837191793 -0.0037511527284775164 7.13592610231119e-5;
@@ -920,7 +920,7 @@ end
 function test_calc_dyadics_Wyb()
     T = 298.0       # temperature in Kelvin
     J = MagFieldLFT.ground_J["Tb"]
-    Bkq = MagFieldLFT.read_Bkq("Bkq_Tb", "Tb")
+    Bkq = MagFieldLFT.read_Bkq_complex("Bkq_Tb", "Tb")
     exact_dyadics = MagFieldLFT.calc_dyadics_Wyb(J, Bkq, T)
     ref = [-19983.04038430544 368.8536285344071 -131.44423778299375;
     368.8536285344071 -15564.84416103268 -273.97794073360933;
@@ -933,7 +933,7 @@ end
 function test_JJbeta3()
     T = 100000      # temperature in Kelvin
     J = MagFieldLFT.ground_J["Tb"]
-    Bkq = MagFieldLFT.read_Bkq("Bkq_Tb", "Tb")
+    Bkq = MagFieldLFT.read_Bkq_complex("Bkq_Tb", "Tb")
     JJderiv1 = MagFieldLFT.JJbeta(J)
     JJderiv2 = MagFieldLFT.JJbeta2(Bkq, J)
     JJderiv3 = MagFieldLFT.JJbeta3(Bkq, J)
@@ -942,6 +942,18 @@ function test_JJbeta3()
     residual = exact_dyadics - JJderiv1*beta - 0.5*JJderiv2*beta^2
     beta3term = JJderiv3*beta^3/6
     return norm(residual - beta3term)/norm(residual) <1e-2
+end
+
+function test_Bkq_real()
+    H_fieldfree = MagFieldLFT.calc_H_fieldfree_Wyb_real("Bkq_Tb_real", "Tb")
+    values = eigvals(H_fieldfree)
+    sort!(values)
+    values = values .- values[1]
+    println(values)
+    ref = MagFieldLFT.cmm1_Hartree*[0.0, 0.18236297983901295, 72.82195951712006, 74.04535451377458,
+    172.9690387781115, 191.64087572361137, 239.46631221328218, 245.49361237777234,
+    263.3118254286973, 330.5619011015835, 339.36452977217255, 416.54655566755685, 418.04462983585125]
+    return norm(values-ref)<1e-10
 end
 
 @testset "MagFieldLFT.jl" begin
@@ -1006,4 +1018,5 @@ end
     @test test_JJbeta2()
     @test test_calc_dyadics_Wyb()
     @test test_JJbeta3()
+    @test test_Bkq_real()
 end
