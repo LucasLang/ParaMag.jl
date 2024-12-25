@@ -263,6 +263,10 @@ function calc_H_fieldfree_Wyb_real(filename::String, Ln::String)
     return calc_H_fieldfree_Wyb(Bkq_complex, J)
 end
 
+"""
+Transformation of spherical components (l=0 and l=2) to the Cartesian form
+of a symmetric 3x3 tensor.
+"""
 function symtensor_trafo_sph_Cart(tensor_0_0, tensor_2)
     tensor = Matrix{ComplexF64}(undef, 3, 3)
     tensor[1,1] = 0.5*(tensor_2[2] + tensor_2[-2]) - tensor_2[0]/sqrt(6) - tensor_0_0/sqrt(3)
@@ -285,6 +289,11 @@ function calc_dyadics_Wyb(J::Real, Bkq::Dict{Tuple{Int, Int}, ComplexF64}, T::Re
     return calc_F_deriv2(energies, states, Hderiv, T)
 end
 
+function calc_dyadics_Wyb(J::Real, Bkq::Dict{Tuple{Int, Int}, Float64}, T::Real)
+    Bkq_complex = Bkq_real2complex(Bkq)
+    return calc_dyadics_Wyb(J, Bkq_complex, T)
+end
+
 """
 First derivative of the spin dyadic with respect to beta.
 """
@@ -300,6 +309,11 @@ function JJbeta2(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
     # Therefore, we have to take the complex conjugate.
     JJderiv_2 = Dict(q => J*(J+1)*(2J+3)*(2J-1)/5/sqrt(6) * conj(Bkq[(2,q)]) for q in -2:2)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
+end
+
+function JJbeta2(Bkq::Dict{Tuple{Int, Int}, Float64}, J)
+    Bkq_complex = Bkq_real2complex(Bkq)
+    return JJbeta2(Bkq_complex, J)
 end
 
 """
@@ -338,4 +352,9 @@ function JJbeta3(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
         end
     end
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
+end
+
+function JJbeta3(Bkq::Dict{Tuple{Int, Int}, Float64}, J)
+    Bkq_complex = Bkq_real2complex(Bkq)
+    return JJbeta3(Bkq_complex, J)
 end
