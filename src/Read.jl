@@ -412,7 +412,7 @@ This version is for complex parameters (which multiply spherical tensor operator
 """
 function read_Bkq_complex(filename::String, Ln::String)
     lines = open(readlines, filename)
-    bkq_dict = Dict{Tuple{Int, Int}, Complex{Float64}}()
+    bkq_dict = Dict{Int64, Dict{Int64, ComplexF64}}()
 
     for (i, line) in enumerate(lines)
         line = strip(line)
@@ -427,53 +427,56 @@ function read_Bkq_complex(filename::String, Ln::String)
             q = parse(Int, parts[2])
             Re = parse(Float64, parts[3])*cmm1_Hartree   # convert to Hartree
             Im = parse(Float64, parts[4])*cmm1_Hartree   # convert to Hartree
-            if k == 2
-                Re *= theta_factors[(Ln, 2)]
-                Im *= theta_factors[(Ln, 2)]
-            elseif k == 4
-                Re *= theta_factors[(Ln, 4)]
-                Im *= theta_factors[(Ln, 4)]
-            elseif k == 6
-                Re *= theta_factors[(Ln, 6)]
-                Im *= theta_factors[(Ln, 6)]
+
+            if !(k%2 == 0)
+                error("k may only take even integer values!")
             end
+            if q<-k || q>k
+                error("q may only take values between -k and k!")
+            end
+
+            Re *= theta_factors[(Ln, k)]
+            Im *= theta_factors[(Ln, k)]
 
             bkq = Re + im * Im
             bkmq = (-1)^q * (Re - im * Im)
             # Add entries to the dictionary
+            if !haskey(bkq_dict, k)
+                bkq_dict[k] = Dict{Int64, ComplexF64}()
+            end
             if q == 0
-                if haskey(bkq_dict, (k, q))
+                if haskey(bkq_dict[k], q)
                     @warn "Duplicate key (k, q) = ($k, $q) found at line $i; skipping."
                 else
                     if imag(bkq)>1e-10
                         @warn "Imaginary part specified for (k, q) = ($k, $q); it will be ignored."
                     end
-                    bkq_dict[(k, q)] = real(bkq)
+                    bkq_dict[k][q] = real(bkq)
                 end
             else
-                if haskey(bkq_dict, (k, q))
+                if haskey(bkq_dict[k], q)
                     @warn "Duplicate key (k, q) = ($k, $q) found at line $i; skipping."
                 else
-                    bkq_dict[(k, q)] = bkq
+                    bkq_dict[k][q] = bkq
                 end
-                if haskey(bkq_dict, (k, -q))
+                if haskey(bkq_dict[k], -q)
                     @warn "Duplicate key (k, q) = ($k, $(-q) found at line $i; skipping."
                 else
-                    bkq_dict[(k, -q)] = bkmq
+                    bkq_dict[k][-q] = bkmq
                 end
             end
         catch e
             error("Error parsing line $i: $line\n$e")
         end
     end
-    for k in [2,4,6]
+    for k in keys(bkq_dict)
         for q in -k:k
-            if !haskey(bkq_dict, (k, q))
-                bkq_dict[(k, q)] = 0.0
+            if !haskey(bkq_dict[k], q)
+                bkq_dict[k][q] = 0.0
             end
         end
     end
-    return bkq_dict
+    return BkqParam(bkq_dict)
 end
 
 """
@@ -483,7 +486,7 @@ This version is for real parameters (which multiply tesseral tensor operators).
 """
 function read_Bkq_real(filename::String, Ln::String)
     lines = open(readlines, filename)
-    bkq_dict = Dict{Tuple{Int, Int}, Float64}()
+    bkq_dict = Dict{Int64, Dict{Int64, Float64}}()
 
     for (i, line) in enumerate(lines)
         line = strip(line)
@@ -498,8 +501,8 @@ function read_Bkq_real(filename::String, Ln::String)
             q = parse(Int, parts[2])
             value = parse(Float64, parts[3])*cmm1_Hartree   # convert to Hartree
 
-            if !(k in [2,4,6])
-                error("k may only take the values 2, 4, and 6!")
+            if !(k%2 == 0)
+                error("k may only take even integer values!")
             end
             if q<-k || q>k
                 error("q may only take values between -k and k!")
@@ -508,33 +511,37 @@ function read_Bkq_real(filename::String, Ln::String)
             value *= theta_factors[(Ln, k)]
 
             # Add entries to the dictionary
-            if haskey(bkq_dict, (k, q))
+            if !haskey(bkq_dict, k)
+                bkq_dict[k] = Dict{Int64, Float64}()
+            end
+            if haskey(bkq_dict[k], q)
                 @warn "Duplicate key (k, q) = ($k, $q) found at line $i; skipping."
             else
-                bkq_dict[(k, q)] = value
+                bkq_dict[k][q] = value
             end
         catch e
             error("Error parsing line $i: $line\n$e")
         end
     end
-    for k in [2,4,6]
+    for k in keys(bkq_dict)
         for q in -k:k
-            if !haskey(bkq_dict, (k, q))
-                bkq_dict[(k, q)] = 0.0
+            if !haskey(bkq_dict[k], q)
+                bkq_dict[k][q] = 0.0
             end
         end
     end
-    return bkq_dict
+    return Bkq_real2complex(bkq_dict)
 end
 
 function Bkq_real2complex(bkq_real)
-    bkq_complex = Dict{Tuple{Int, Int}, Complex{Float64}}()
-    for k in [2,4,6]
-        bkq_complex[(k, 0)] = bkq_real[(k, 0)]
+    bkq_complex = Dict{Int64, Dict{Int64, ComplexF64}}()
+    for k in keys(bkq_real)
+        bkq_complex[k] = Dict{Int64, ComplexF64}()
+        bkq_complex[k][0] = bkq_real[k][0]
         for q in 1:k
-            bkq_complex[(k, q)] = bkq_real[(k, q)] + im*bkq_real[(k, -q)]
-            bkq_complex[(k, -q)] = (-1)^q * conj(bkq_complex[(k, q)])
+            bkq_complex[k][q] = bkq_real[k][q] + im*bkq_real[k][-q]
+            bkq_complex[k][-q] = (-1)^q * conj(bkq_complex[k][q])
         end
     end
-    return bkq_complex
+    return BkqParam(bkq_complex)
 end

@@ -1,3 +1,10 @@
+struct BkqParam
+    Bkq::Dict{Int64, Dict{Int64, ComplexF64}}
+end
+
+Base.getindex(bkqparam::BkqParam, k) = bkqparam.Bkq[k]  # enable direct access to the dictionary
+Base.keys(bkqparam::BkqParam) = keys(bkqparam.Bkq)  # enable direct access to the dictionary
+
 """
 mult:    Spin multiplicity (=2S+1, where S is the total spin quantum number)
 gtensor: Zeeman tensor parametrizing the electronic magnetic moment
@@ -244,9 +251,9 @@ Later: remove Wyb and use dispatch based on type.
 Bkq: dictionary with the ligand field parameters
 J: Total angular momentum (or spin, for TM complexes) quantum number
 """
-function calc_H_fieldfree_Wyb(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
+function calc_H_fieldfree_Wyb(Bkq::BkqParam, J)
     Tkq = calc_STOs_WE(J)
-    H_fieldfree = sum([Bkq[key]*Tkq[key] for key in keys(Bkq)])
+    H_fieldfree = sum([sum([Bkq[k][q]*Tkq[(k,q)] for q in -k:k]) for k in keys(Bkq)])
     return Hermitian(H_fieldfree)
 end
 
@@ -258,9 +265,8 @@ end
 
 function calc_H_fieldfree_Wyb_real(filename::String, Ln::String)
     J = ground_J[Ln]
-    Bkq_real = read_Bkq_real(filename, Ln)
-    Bkq_complex = Bkq_real2complex(Bkq_real)
-    return calc_H_fieldfree_Wyb(Bkq_complex, J)
+    Bkq = read_Bkq_real(filename, Ln)
+    return calc_H_fieldfree_Wyb(Bkq, J)
 end
 
 """
@@ -295,7 +301,7 @@ function symtensor_trafo_Cart_sph(tensor::Matrix{T}) where T <: Real
     return tensor_0_0, tensor_2
 end
 
-function calc_dyadics_Wyb(J::Real, Bkq::Dict{Tuple{Int, Int}, ComplexF64}, T::Real)
+function calc_dyadics_Wyb(J::Real, Bkq::BkqParam, T::Real)
     Jop = calc_soperators(J)
     Hderiv = [Jop[:,:,1], Jop[:,:,2], Jop[:,:,3]]
     H_fieldfree = calc_H_fieldfree_Wyb(Bkq, J)
@@ -303,11 +309,6 @@ function calc_dyadics_Wyb(J::Real, Bkq::Dict{Tuple{Int, Int}, ComplexF64}, T::Re
     energies = solution.values
     states = solution.vectors
     return calc_F_deriv2(energies, states, Hderiv, T)
-end
-
-function calc_dyadics_Wyb(J::Real, Bkq::Dict{Tuple{Int, Int}, Float64}, T::Real)
-    Bkq_complex = Bkq_real2complex(Bkq)
-    return calc_dyadics_Wyb(J, Bkq_complex, T)
 end
 
 """
@@ -319,37 +320,32 @@ function JJbeta(J)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
 end
 
-function JJbeta2(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
+function JJbeta2(Bkq::BkqParam, J)
     JJderiv_0_0 = 0.0
     # The Wybourne parameters are not proper spherical tensors.
     # Therefore, we have to take the complex conjugate.
-    JJderiv_2 = Dict(q => J*(J+1)*(2J+3)*(2J-1)/5/sqrt(6) * conj(Bkq[(2,q)]) for q in -2:2)
+    JJderiv_2 = Dict(q => J*(J+1)*(2J+3)*(2J-1)/5/sqrt(6) * conj(Bkq[2][q]) for q in -2:2)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
-end
-
-function JJbeta2(Bkq::Dict{Tuple{Int, Int}, Float64}, J)
-    Bkq_complex = Bkq_real2complex(Bkq)
-    return JJbeta2(Bkq_complex, J)
 end
 
 """
 Couple two sets of Wybourne parameters to a new spherical tensor of order K.
 """
-function Bk_otimes_Bk(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, k, ktilde, K)
+function Bk_otimes_Bk(Bkq::BkqParam, k, ktilde, K)
     result = Dict(Q => 0.0*im for Q in -K:K)
     for q in -k:k
         for qtilde in -ktilde:ktilde
             for Q in -K:K
                 # The Wybourne ligand field parameters are not proper spherical tensors.
                 # Therefore, we have to take the complex conjugate.
-                result[Q] += clebschgordan(k, q, ktilde, qtilde, K, Q)*conj(Bkq[(k, q)])*conj(Bkq[(ktilde, qtilde)])
+                result[Q] += clebschgordan(k, q, ktilde, qtilde, K, Q)*conj(Bkq[k][q])*conj(Bkq[ktilde][qtilde])
             end
         end
     end
     return result
 end
 
-function JJbeta3(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
+function JJbeta3(Bkq::BkqParam, J)
     JJderiv_0_0 = 0.0
     for k in [2,4,6]
         JJderiv_0_0 += (-1/2/sqrt(3))*k*(k+1)/sqrt(2k+1) * RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k, 0)[0]
@@ -370,7 +366,10 @@ function JJbeta3(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
 end
 
-function JJbeta3(Bkq::Dict{Tuple{Int, Int}, Float64}, J)
-    Bkq_complex = Bkq_real2complex(Bkq)
-    return JJbeta3(Bkq_complex, J)
+function trafo_Dtensor_WybourneBkq(Dtensor::Matrix{T}) where T<:Real
+    @assert norm(Dtensor-Dtensor') < 1e-10
+    tensor_0_0, tensor_2 = symtensor_trafo_Cart_sph(Dtensor)
+    R2 = sqrt(3/2)   # ratio of Wybourne and Koster/Statz normalization for k=2
+    B2q = Dict(q => conj(tensor_2[q])/R2 for q in -2:2)
+    return Dict(2 => B2q)
 end

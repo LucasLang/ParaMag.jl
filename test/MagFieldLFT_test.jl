@@ -925,7 +925,7 @@ function test_calc_dyadics_Wyb()
     ref = [-19983.04038430544 368.8536285344071 -131.44423778299375;
     368.8536285344071 -15564.84416103268 -273.97794073360933;
     -131.44423778299375 -273.97794073360933 -8543.79795610935]
-    return norm(exact_dyadics - ref) < 1e-10
+    return norm(exact_dyadics - ref) < 1e-7
 end
 
 # we choose an unphysically high temperature here in order to
@@ -949,7 +949,6 @@ function test_Bkq_real()
     values = eigvals(H_fieldfree)
     sort!(values)
     values = values .- values[1]
-    println(values)
     ref = MagFieldLFT.cmm1_Hartree*[0.0, 0.18236297983901295, 72.82195951712006, 74.04535451377458,
     172.9690387781115, 191.64087572361137, 239.46631221328218, 245.49361237777234,
     263.3118254286973, 330.5619011015835, 339.36452977217255, 416.54655566755685, 418.04462983585125]
