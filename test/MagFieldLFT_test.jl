@@ -956,6 +956,14 @@ function test_Bkq_real()
     return norm(values-ref)<1e-10
 end
 
+function test_symtensor_trafo()
+    tensor = rand(3,3)
+    tensor = 0.5*(tensor+tensor')   # symmetrize the random 3x3 tensor
+    tensor_0_0, tensor_2 = MagFieldLFT.symtensor_trafo_Cart_sph(tensor)
+    tensor_backtransformed = MagFieldLFT.symtensor_trafo_sph_Cart(tensor_0_0, tensor_2)
+    return norm(tensor-tensor_backtransformed) < 1e-10
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1019,4 +1027,5 @@ end
     @test test_calc_dyadics_Wyb()
     @test test_JJbeta3()
     @test test_Bkq_real()
+    @test test_symtensor_trafo()
 end

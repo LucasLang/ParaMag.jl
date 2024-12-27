@@ -279,6 +279,22 @@ function symtensor_trafo_sph_Cart(tensor_0_0, tensor_2)
     return real(tensor)
 end
 
+"""
+Transformation of Cartesian form
+of a symmetric 3x3 tensor to spherical components (l=0 and l=2).
+"""
+function symtensor_trafo_Cart_sph(tensor::Matrix{T}) where T <: Real
+    @assert norm(tensor-tensor') < 1e-10
+    tensor_0_0 = (-1/sqrt(3))*(tensor[1,1]+tensor[2,2]+tensor[3,3])
+    tensor_2 = Dict{Int64,ComplexF64}()
+    tensor_2[2] = 0.5*(tensor[1,1]-tensor[2,2] +2*im*tensor[1,2])
+    tensor_2[1] = -tensor[1,3]-im*tensor[2,3]
+    tensor_2[0] = (2*tensor[3,3]-tensor[1,1]-tensor[2,2])/sqrt(6)
+    tensor_2[-1] = tensor[1,3]-im*tensor[2,3]
+    tensor_2[-2] = 0.5*(tensor[1,1]-tensor[2,2]-2*im*tensor[1,2])
+    return tensor_0_0, tensor_2
+end
+
 function calc_dyadics_Wyb(J::Real, Bkq::Dict{Tuple{Int, Int}, ComplexF64}, T::Real)
     Jop = calc_soperators(J)
     Hderiv = [Jop[:,:,1], Jop[:,:,2], Jop[:,:,3]]
@@ -305,7 +321,7 @@ end
 
 function JJbeta2(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, J)
     JJderiv_0_0 = 0.0
-    # The Wybourne ligand field parameters are not proper spherical tensors.
+    # The Wybourne parameters are not proper spherical tensors.
     # Therefore, we have to take the complex conjugate.
     JJderiv_2 = Dict(q => J*(J+1)*(2J+3)*(2J-1)/5/sqrt(6) * conj(Bkq[(2,q)]) for q in -2:2)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
@@ -317,7 +333,7 @@ function JJbeta2(Bkq::Dict{Tuple{Int, Int}, Float64}, J)
 end
 
 """
-Couple two ligand field parameters to a new spherical tensor of order K.
+Couple two sets of Wybourne parameters to a new spherical tensor of order K.
 """
 function Bk_otimes_Bk(Bkq::Dict{Tuple{Int, Int}, ComplexF64}, k, ktilde, K)
     result = Dict(Q => 0.0*im for Q in -K:K)
