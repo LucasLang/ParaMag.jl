@@ -14,15 +14,24 @@ Atensors: Hyperfine coupling tensors parametrizing the magnetic field created by
 struct SHParam
     mult::Int64
     gtensor::Matrix{Float64}
-    Dtensor::Matrix{Float64}
+    Bkq::BkqParam
     Atensors::Vector{Matrix{Float64}}
     gammas::Vector{Float64}
 end
 
 """
-Constructor with default value for Atensors: empty list.
+Constructors with default values for Atensors and gammas: empty lists.
 """
 SHParam(mult::Integer, gtensor::Matrix, Dtensor::Matrix, Atensors=Vector{Matrix{Float64}}(), gammas=Vector{Float64}()) = SHParam(mult, gtensor, Dtensor, Atensors, gammas)
+SHParam(mult::Integer, gtensor::Matrix, Bkq::BkqParam, Atensors=Vector{Matrix{Float64}}(), gammas=Vector{Float64}()) = SHParam(mult, gtensor, Bkq, Atensors, gammas)
+
+"""
+Constructor taking D-tensor instead of Bkq as argument
+"""
+function SHParam(mult::Integer, gtensor::Matrix, Dtensor::Matrix, Atensors::Vector{Matrix{Float64}}, gammas::Vector{Float64})
+    Bkq = trafo_Dtensor_WybourneBkq(Dtensor)
+    return SHParam(mult, gtensor, Bkq, Atensors, gammas)
+end
 
 """
 H_fieldfree: The field-free Hamiltonian
@@ -43,13 +52,14 @@ function calc_Sop(S)
 end
 
 """
-Implements S^T D S
+Calculate H_fieldfree using Wybourne parametrization.
 """
 function calc_H_fieldfree(shparam::SHParam)
-    S = 0.5*(shparam.mult - 1)    # Spin quantum number
-    Sop = calc_soperators(S)
-    StDS = sum(shparam.Dtensor[i, j] * Sop[:, :, i] * Sop[:, :, j] for i in 1:3, j in 1:3)
-    return Hermitian(StDS)
+    Bkq = shparam.Bkq
+    J = (shparam.mult-1)/2
+    Tkq = calc_STOs_WE(J)
+    H_fieldfree = sum([sum([Bkq[k][q]*Tkq[(k,q)] for q in -k:k]) for k in keys(Bkq)])
+    return Hermitian(H_fieldfree)
 end
 
 function SpinHamiltonian(shparam::SHParam)
@@ -371,5 +381,5 @@ function trafo_Dtensor_WybourneBkq(Dtensor::Matrix{T}) where T<:Real
     tensor_0_0, tensor_2 = symtensor_trafo_Cart_sph(Dtensor)
     R2 = sqrt(3/2)   # ratio of Wybourne and Koster/Statz normalization for k=2
     B2q = Dict(q => conj(tensor_2[q])/R2 for q in -2:2)
-    return Dict(2 => B2q)
+    return BkqParam(Dict(2 => B2q))
 end
