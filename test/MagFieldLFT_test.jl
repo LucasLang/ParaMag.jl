@@ -980,6 +980,47 @@ function test_dyadics()
     return norm(dyadic-ref) < 1e-10
 end
 
+function test_SSbeta()
+    mult = 3   # NiSAL has a triplet ground state
+    S =  (mult-1)/2
+
+    SS_beta = MagFieldLFT.JJbeta(S)
+    SS_beta_ref = -S*(S+1)/3 *Matrix(1.0I, 3,3)
+    return norm(SS_beta-SS_beta_ref) < 1e-15
+end
+
+function test_SSbeta2()
+    mult = 3   # NiSAL has a triplet ground state
+    S =  (mult-1)/2
+
+    Dtensor = [  3.053926    -5.555174   -16.580693;
+    -5.555174    22.210495    -7.191116;
+   -16.580693    -7.191116    -0.939858]*MagFieldLFT.cmm1_Hartree   # directly convert from cm-1 to Hartree
+    Dtensor = Dtensor - (tr(Dtensor)/3)*Matrix(1.0I, 3, 3)  # equation is only valid if D-tensor is traceless
+
+    Bkq = MagFieldLFT.trafo_Dtensor_WybourneBkq(Dtensor)
+    SS_beta2 = MagFieldLFT.JJbeta2(Bkq, S)
+    SS_beta2_ref = S*(S+1)*(2S+3)*(2S-1)/15 * Dtensor
+    return norm(SS_beta2-SS_beta2_ref) < 1e-15
+end
+
+function test_SSbeta3()
+    mult = 5   # For this test, use a fake multiplicity: anisotropic contribution is exactly zero for S=1
+    S =  (mult-1)/2
+
+    Dtensor = [  3.053926    -5.555174   -16.580693;
+    -5.555174    22.210495    -7.191116;
+   -16.580693    -7.191116    -0.939858]*MagFieldLFT.cmm1_Hartree   # directly convert from cm-1 to Hartree
+    Dtensor = Dtensor - (tr(Dtensor)/3)*Matrix(1.0I, 3, 3)  # equation is only valid if D-tensor is traceless
+    D2 = Dtensor * Dtensor
+    trD2 = tr(D2)
+    D2aniso = D2 - (trD2/3)*Matrix(1.0I, 3, 3)
+    Bkq = MagFieldLFT.trafo_Dtensor_WybourneBkq(Dtensor)
+    SS_beta3 = MagFieldLFT.JJbeta3(Bkq, S)
+    SS_beta3_ref =  -S*(S+1)*(2S+3)*(2S-1)*((S+2)*(S-1)/17.5*D2aniso - trD2/30*Matrix(1.0I, 3, 3))
+    return norm(SS_beta3-SS_beta3_ref) < 1e-15
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1045,4 +1086,7 @@ end
     @test test_Bkq_real()
     @test test_symtensor_trafo()
     @test test_dyadics()
+    @test test_SSbeta()
+    @test test_SSbeta2()
+    @test test_SSbeta3()
 end

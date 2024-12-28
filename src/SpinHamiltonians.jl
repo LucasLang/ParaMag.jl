@@ -330,6 +330,9 @@ function JJbeta(J)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
 end
 
+"""
+Second derivative of the spin dyadic with respect to beta.
+"""
 function JJbeta2(Bkq::BkqParam, J)
     JJderiv_0_0 = 0.0
     # The Wybourne parameters are not proper spherical tensors.
@@ -355,20 +358,26 @@ function Bk_otimes_Bk(Bkq::BkqParam, k, ktilde, K)
     return result
 end
 
+"""
+Third derivative of the spin dyadic with respect to beta.
+"""
 function JJbeta3(Bkq::BkqParam, J)
     JJderiv_0_0 = 0.0
-    for k in [2,4,6]
+    for k in keys(Bkq)
         JJderiv_0_0 += (-1/2/sqrt(3))*k*(k+1)/sqrt(2k+1) * RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k, 0)[0]
     end
     JJderiv_2 = Dict(Q => 0.0*im for Q in -2:2)
     # first: k=ktilde contribution to anisotropic part of dyadic
-    for k in [2,4,6]
+    for k in keys(Bkq)
         for Q in -2:2
             JJderiv_2[Q] += sqrt(1/30)*sqrt(k*(k+1)/(2k-1)/(2k+1)/(2k+3))*(6J*(J+1)-2.5*k*(k+1)+3)*RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k, 2)[Q]
         end
     end
     # second: |k-ktilde|=2 contribution to anisotropic part of dyadic
-    for k in [4,6]
+    for k in keys(Bkq)
+        if k==2
+            continue
+        end
         for Q in -2:2
             JJderiv_2[Q] += -6/sqrt(5) * sqrt(k*(k-1)/(2k+1)/(2k-1)/(2k-3))*RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k-2, 2)[Q]
         end
@@ -378,7 +387,11 @@ end
 
 function trafo_Dtensor_WybourneBkq(Dtensor::Matrix{T}) where T<:Real
     @assert norm(Dtensor-Dtensor') < 1e-10
-    tensor_0_0, tensor_2 = symtensor_trafo_Cart_sph(Dtensor)
+    trace = tr(Dtensor)
+    if trace>norm(Dtensor)*1e-10
+        @warn "Non-traceless D-tensor provided. Only its traceless part will be used."
+    end
+    tensor_0_0, tensor_2 = symtensor_trafo_Cart_sph(Dtensor)   # tensor_0_0 is discarded in the following
     R2 = sqrt(3/2)   # ratio of Wybourne and Koster/Statz normalization for k=2
     B2q = Dict(q => conj(tensor_2[q])/R2 for q in -2:2)
     return BkqParam(Dict(2 => B2q))
