@@ -963,6 +963,23 @@ function test_symtensor_trafo()
     return norm(tensor-tensor_backtransformed) < 1e-10
 end
 
+function test_dyadics()
+    mult = 3   # NiSAL has a triplet ground state
+    S =  (mult-1)/2
+
+    Dtensor = [  3.053926    -5.555174   -16.580693;
+    -5.555174    22.210495    -7.191116;
+   -16.580693    -7.191116    -0.939858]*MagFieldLFT.cmm1_Hartree   # directly convert from cm-1 to Hartree
+
+    T = 298.0
+
+    dyadic = MagFieldLFT.calc_dyadics(S, Dtensor, T)
+    ref = [-713.6680177845467 -9.446126297670798 -28.19413400569129;
+    -9.446126297670798 -681.0938139514958 -12.227914005431503;
+    -28.19413400569129 -12.227914005431503 -720.4591260503914]
+    return norm(dyadic-ref) < 1e-10
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1027,4 +1044,5 @@ end
     @test test_JJbeta3()
     @test test_Bkq_real()
     @test test_symtensor_trafo()
+    @test test_dyadics()
 end
