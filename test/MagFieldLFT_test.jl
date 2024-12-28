@@ -868,11 +868,11 @@ function test_PCS_PDA_finitefield_SH()
 
     T = 298.0
     grid = lebedev_grids[20]
-    B0_MHz = 400.0
+    B0_MHz = 10.0
     B0 = B0_MHz/42.577478518/2.35051756758e5
     finitefield_shifts = MagFieldLFT.estimate_shifts_finitefield(sh, R_selected_NiSAL, B0, T, grid)
-    println(finitefield_shifts)
-    return false
+    KMcG_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey(sh, R_selected_NiSAL, T)
+    return norm(finitefield_shifts-KMcG_shifts) < 1e-5
 end
 
 # Test against analytical expressions from Smith and Thornley (1966)
