@@ -405,6 +405,16 @@ function read_integrals_so_f(fileint::String)   #could be adjuted to be used for
 
 end
 
+function read_Bkq(filename::String, Ln::String, format::String="Wyb_real")
+    if format=="Wyb_real"
+        return read_Bkq_real(filename, Ln)
+    elseif format=="Wyb_complex"
+        return read_Bkq_complex(filename, Ln)
+    elseif format=="Stevens"
+        error("Stevens parametrization not yet supported!")   #XXXLucasXXX
+    end
+end
+
 """
 We assume that the file contains the parameters in cm^-1 (as is usual).
 Internally, we use Hartree atomic units.

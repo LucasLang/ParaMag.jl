@@ -1021,6 +1021,39 @@ function test_SSbeta3()
     return norm(SS_beta3-SS_beta3_ref) < 1e-15
 end
 
+"""
+For this test, I also compared with the CASSCF numbers in Table 1 of
+Suturina et al., Angew. Chem. Int. Ed. 2017, 56, 12215-12218.
+I got agreement for all six complexes in the table, but only test one of them here.
+"""
+function test_susceptibility_Ln()
+    Ln = "Tb"
+
+    shparam = MagFieldLFT.SHParam_lanthanoid("Bkq_$(Ln)_real", Ln)
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+    T = 298.0
+    susc = MagFieldLFT.calc_susceptibility_vanVleck(sh, T)
+    susc = susc-tr(susc)/3*Matrix(1.0I, 3, 3)   # traceless part
+    vals = eigvals(susc)
+
+    au2angstrom3 = (MagFieldLFT.a0/MagFieldLFT.angstrom)^3
+    vals *= au2angstrom3    # convert from atomic units to angstrom^3
+
+    order = sortperm(vals, by=abs)   # convention: |chi_x| <= |chi_y| <= |chi_z|
+    chi_x = vals[order[1]]
+    chi_y = vals[order[2]]
+    chi_z = vals[order[3]]
+
+    chi_ax = chi_z - 0.5*(chi_x+chi_y)
+    chi_rh = 0.5*(chi_x - chi_y)
+    rhombicity = chi_rh/chi_ax
+
+    ref_chi_ax = -0.5158916695847895
+    ref_rhombicity = 0.24158864394051485
+
+    return abs(chi_ax-ref_chi_ax)<1e-10 && abs(rhombicity-ref_rhombicity)<1e-10
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1089,4 +1122,5 @@ end
     @test test_SSbeta()
     @test test_SSbeta2()
     @test test_SSbeta3()
+    @test test_susceptibility_Ln()
 end

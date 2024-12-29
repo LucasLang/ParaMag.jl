@@ -22,8 +22,8 @@ end
 """
 Constructors with default values for Atensors and gammas: empty lists.
 """
-SHParam(mult::Integer, gtensor::Matrix, Dtensor::Matrix, Atensors=Vector{Matrix{Float64}}(), gammas=Vector{Float64}()) = SHParam(mult, gtensor, Dtensor, Atensors, gammas)
-SHParam(mult::Integer, gtensor::Matrix, Bkq::BkqParam, Atensors=Vector{Matrix{Float64}}(), gammas=Vector{Float64}()) = SHParam(mult, gtensor, Bkq, Atensors, gammas)
+SHParam(mult::Integer, gtensor::Matrix, Dtensor::Matrix) = SHParam(mult, gtensor, Dtensor, Vector{Matrix{Float64}}(), Vector{Float64}())
+SHParam(mult::Integer, gtensor::Matrix, Bkq::BkqParam) = SHParam(mult, gtensor, Bkq, Vector{Matrix{Float64}}(), Vector{Float64}())
 
 """
 Constructor taking D-tensor instead of Bkq as argument
@@ -31,6 +31,15 @@ Constructor taking D-tensor instead of Bkq as argument
 function SHParam(mult::Integer, gtensor::Matrix, Dtensor::Matrix, Atensors::Vector{Matrix{Float64}}, gammas::Vector{Float64})
     Bkq = trafo_Dtensor_WybourneBkq(Dtensor)
     return SHParam(mult, gtensor, Bkq, Atensors, gammas)
+end
+
+function SHParam_lanthanoid(filename::String, Ln::String, format="Wyb_real")
+    # XXXLucasXXX: we should have a single function that can be used
+    Bkq = read_Bkq(filename, Ln, format)
+    J = ground_J[Ln]
+    mult = Int64(2J+1)
+    gtensor = Lande_gJ[Ln]*Matrix(1.0I, 3, 3)
+    return SHParam(mult, gtensor, Bkq)
 end
 
 """
