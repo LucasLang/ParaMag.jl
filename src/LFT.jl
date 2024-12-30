@@ -30,7 +30,8 @@ end
 
 """
 param: LFT parameters
-R: Nuclear positions relative to the paramagnetic center (metal)
+R: Nuclear positions relative to the paramagnetic center (metal) -> used for constructing the hyperfine
+   field operator in the point-dipole approximation (PDA).
 """
 function LFT(param::LFTParam, R::Vector{Vector{Float64}}=Vector{Vector{Float64}}())
     H_fieldfree, Mel = calc_operators(param)

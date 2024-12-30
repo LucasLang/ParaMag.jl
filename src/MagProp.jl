@@ -6,8 +6,11 @@
 """
 This is an abstract type for different computational models, like LFT or Spin Hamiltonians.
 
-Functions that should be implemented for any concrete subtype:
-    calc_operators: Returns the field-free Hamiltonian and magnetic moment operators.
+Member variables that should be implemented for any concrete subtype:
+    H_fieldfree::HermMat
+    Mel_trafo::Matrix{Float64}
+    BHF_trafo::Vector{Matrix{Float64}}
+    base_op::Vector{Matrix{ComplexF64}}
 """
 abstract type CompModel end
 
