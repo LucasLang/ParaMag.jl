@@ -43,12 +43,14 @@ function SHParam_lanthanoid(filename::String, Ln::String, format="Wyb_real")
 end
 
 """
+S::(Pseudo)spin quantum number
 H_fieldfree: The field-free Hamiltonian
 Mel_trafo:: Matrix applied to base operators to get magnetic moment operators (here: using g-tensor)
 BHF_trafo:: Matrix applied to base operators to get hyperfine field operators (here: using HFC A-tensors)
 base_op:: base operators (here: spin operators)
 """
 struct SpinHamiltonian <: CompModel
+    S::Float64
     H_fieldfree::HermMat
     Mel_trafo::Matrix{Float64}
     BHF_trafo::Vector{Matrix{Float64}}
@@ -78,7 +80,7 @@ function SpinHamiltonian(shparam::SHParam)
     Mel_trafo = -0.5*shparam.gtensor
     Nnuc = length(shparam.Atensors)
     BHF_trafo = [-(1/shparam.gammas[i])*shparam.Atensors[i] for i in 1:Nnuc]
-    return SpinHamiltonian(H_fieldfree, Mel_trafo, BHF_trafo, Sop)
+    return SpinHamiltonian(S, H_fieldfree, Mel_trafo, BHF_trafo, Sop)
 end
 
 function calc_magneticmoment_operator(shparam::SHParam)
@@ -97,28 +99,19 @@ end
 """
 D-tensor has to be provided in atomic units! (not the more common cm-1)
 """
-function calc_dyadics(s::Float64, D::Matrix{Float64}, T::Real, quadruple::Bool=false)
-    S = calc_soperators(s)
-
-    Hderiv = [S[:,:,1], S[:,:,2], S[:,:,3]]
-
-    StDS = sum(D[i, j] * S[:, :, i] * S[:, :, j] for i in 1:3, j in 1:3)
-
-    solution = eigen(StDS)
+function calc_dyadic(sh::SpinHamiltonian, T::Real, quadruple::Bool=false)
+    solution = eigen(sh.H_fieldfree)
     energies = solution.values
     states = solution.vectors
 
-    SS = calc_F_deriv2(energies, states, Hderiv, T)
+    SS = calc_F_deriv2(energies, states, sh.base_op, T)
 
     if quadruple
-
-        SSSS = calc_F_deriv4(energies, states, Hderiv, T)
-
+        SSSS = calc_F_deriv4(energies, states, sh.base_op, T)
         return SS, SSSS
     else
         return SS
     end
-
 end
 
 

@@ -971,9 +971,12 @@ function test_dyadics()
     -5.555174    22.210495    -7.191116;
    -16.580693    -7.191116    -0.939858]*MagFieldLFT.cmm1_Hartree   # directly convert from cm-1 to Hartree
 
+    shparam = MagFieldLFT.SHParam(mult, 2*Matrix(1.0I, 3, 3), Dtensor)
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+
     T = 298.0
 
-    dyadic = MagFieldLFT.calc_dyadics(S, Dtensor, T)
+    dyadic = MagFieldLFT.calc_dyadic(sh, T)
     ref = [-713.6680177845467 -9.446126297670798 -28.19413400569129;
     -9.446126297670798 -681.0938139514958 -12.227914005431503;
     -28.19413400569129 -12.227914005431503 -720.4591260503914]
