@@ -73,6 +73,14 @@ function calc_H_fieldfree(shparam::SHParam)
     return Hermitian(H_fieldfree)
 end
 
+"""
+Fallback constructor.
+"""
+function SpinHamiltonian(args...)
+    shparam = SHParam(args...)
+    return SpinHamiltonian(shparam)
+end
+
 function SpinHamiltonian(shparam::SHParam)
     H_fieldfree = calc_H_fieldfree(shparam)
     S = 0.5*(shparam.mult - 1)    # Spin quantum number
