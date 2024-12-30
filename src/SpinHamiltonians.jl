@@ -258,30 +258,6 @@ function calc_STOs_WE(l, RME_func=RME_Wybourne)
 end
 
 """
-Calculate H_fieldfree using Wybourne parametrization.
-Later: remove Wyb and use dispatch based on type.
-Bkq: dictionary with the ligand field parameters
-J: Total angular momentum (or spin, for TM complexes) quantum number
-"""
-function calc_H_fieldfree_Wyb(Bkq::BkqParam, J)
-    Tkq = calc_STOs_WE(J)
-    H_fieldfree = sum([sum([Bkq[k][q]*Tkq[(k,q)] for q in -k:k]) for k in keys(Bkq)])
-    return Hermitian(H_fieldfree)
-end
-
-function calc_H_fieldfree_Wyb_complex(filename::String, Ln::String)
-    J = ground_J[Ln]
-    Bkq = read_Bkq_complex(filename, Ln)
-    return calc_H_fieldfree_Wyb(Bkq, J)
-end
-
-function calc_H_fieldfree_Wyb_real(filename::String, Ln::String)
-    J = ground_J[Ln]
-    Bkq = read_Bkq_real(filename, Ln)
-    return calc_H_fieldfree_Wyb(Bkq, J)
-end
-
-"""
 Transformation of spherical components (l=0 and l=2) to the Cartesian form
 of a symmetric 3x3 tensor.
 """
@@ -313,20 +289,11 @@ function symtensor_trafo_Cart_sph(tensor::Matrix{T}) where T <: Real
     return tensor_0_0, tensor_2
 end
 
-function calc_dyadics_Wyb(J::Real, Bkq::BkqParam, T::Real)
-    Jop = calc_soperators(J)
-    Hderiv = [Jop[:,:,1], Jop[:,:,2], Jop[:,:,3]]
-    H_fieldfree = calc_H_fieldfree_Wyb(Bkq, J)
-    solution = eigen(H_fieldfree)
-    energies = solution.values
-    states = solution.vectors
-    return calc_F_deriv2(energies, states, Hderiv, T)
-end
-
 """
 First derivative of the spin dyadic with respect to beta.
 """
-function JJbeta(J)
+function JJbeta(shparam::SHParam)
+    J = (shparam.mult-1)/2
     JJderiv_0_0 = J*(J+1)/sqrt(3)
     JJderiv_2 = Dict(q => 0.0 for q in -2:2)
     return symtensor_trafo_sph_Cart(JJderiv_0_0, JJderiv_2)
@@ -335,7 +302,9 @@ end
 """
 Second derivative of the spin dyadic with respect to beta.
 """
-function JJbeta2(Bkq::BkqParam, J)
+function JJbeta2(shparam::SHParam)
+    J = (shparam.mult-1)/2
+    Bkq = shparam.Bkq
     JJderiv_0_0 = 0.0
     # The Wybourne parameters are not proper spherical tensors.
     # Therefore, we have to take the complex conjugate.
@@ -363,7 +332,9 @@ end
 """
 Third derivative of the spin dyadic with respect to beta.
 """
-function JJbeta3(Bkq::BkqParam, J)
+function JJbeta3(shparam::SHParam)
+    J = (shparam.mult-1)/2
+    Bkq = shparam.Bkq
     JJderiv_0_0 = 0.0
     for k in keys(Bkq)
         JJderiv_0_0 += (-1/2/sqrt(3))*k*(k+1)/sqrt(2k+1) * RME_Wybourne(J, k)^2 * Bk_otimes_Bk(Bkq, k, k, 0)[0]
@@ -391,7 +362,7 @@ function trafo_Dtensor_WybourneBkq(Dtensor::Matrix{T}) where T<:Real
     @assert norm(Dtensor-Dtensor') < 1e-10
     trace = tr(Dtensor)
     if trace>norm(Dtensor)*1e-10
-        @warn "Non-traceless D-tensor provided. Only its traceless part will be used."
+        @warn "Non-traceless D-tensor provided. Only its traceless part will be preserved."
     end
     tensor_0_0, tensor_2 = symtensor_trafo_Cart_sph(Dtensor)   # tensor_0_0 is discarded in the following
     R2 = sqrt(3/2)   # ratio of Wybourne and Koster/Statz normalization for k=2

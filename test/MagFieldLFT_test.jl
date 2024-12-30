@@ -886,8 +886,9 @@ function test_Wybourne()
 end
 
 function test_H_fieldfree_Wyb()
-    H_fieldfree = MagFieldLFT.calc_H_fieldfree_Wyb_complex("Bkq_Tb", "Tb")
-    values = eigvals(H_fieldfree)
+    shparam = MagFieldLFT.SHParam_lanthanoid("Bkq_Tb", "Tb", "Wyb_complex")
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+    values = eigvals(sh.H_fieldfree)
     sort!(values)
     values = values .- values[1]
     ref = MagFieldLFT.cmm1_Hartree*[0.0, 0.18236297983901295, 72.82195951712006, 74.04535451377458,
@@ -898,7 +899,10 @@ end
 
 function test_JJbeta()
     J = 2.5
-    JJ_deriv = MagFieldLFT.JJbeta(J)
+    Dtensor = zeros(3,3)
+    gmatrix = 2*Matrix(1.0I, 3, 3)
+    shparam = MagFieldLFT.SHParam(Int64(2J+1), gmatrix, Dtensor)
+    JJ_deriv = MagFieldLFT.JJbeta(shparam)
     ref = -(J*(J+1)/3)*Matrix(1.0I, 3, 3)
     return norm(JJ_deriv-ref) <1e-10
 end
@@ -906,9 +910,8 @@ end
 # tested correctness of JJbeta2 by comparing with exact dyadic minus JJbeta at very high T
 function test_JJbeta2()
     T = 298.0       # temperature in Kelvin
-    J = MagFieldLFT.ground_J["Tb"]
-    Bkq = MagFieldLFT.read_Bkq_complex("Bkq_Tb", "Tb")
-    JJderiv2 = MagFieldLFT.JJbeta2(Bkq, J)
+    shparam = MagFieldLFT.SHParam_lanthanoid("Bkq_Tb_real", "Tb")
+    JJderiv2 = MagFieldLFT.JJbeta2(shparam)
     ref = [-0.008626405358262486 0.00031406199837191793 0.000584764690998459;
     0.00031406199837191793 -0.0037511527284775164 7.13592610231119e-5;
     0.000584764690998459 7.13592610231119e-5 0.012377558086740003]
@@ -933,14 +936,12 @@ end
 # suppress higher powers in beta in the exact dyadic
 function test_JJbeta3()
     T = 100000      # temperature in Kelvin
-    J = MagFieldLFT.ground_J["Tb"]
-    Bkq = MagFieldLFT.read_Bkq_complex("Bkq_Tb", "Tb")
-    JJderiv1 = MagFieldLFT.JJbeta(J)
-    JJderiv2 = MagFieldLFT.JJbeta2(Bkq, J)
-    JJderiv3 = MagFieldLFT.JJbeta3(Bkq, J)
     Ln = "Tb"
     shparam = MagFieldLFT.SHParam_lanthanoid("Bkq_$(Ln)_real", Ln)
     sh = MagFieldLFT.SpinHamiltonian(shparam)
+    JJderiv1 = MagFieldLFT.JJbeta(shparam)
+    JJderiv2 = MagFieldLFT.JJbeta2(shparam)
+    JJderiv3 = MagFieldLFT.JJbeta3(shparam)
     exact_dyadic = MagFieldLFT.calc_dyadic(sh, T)
     beta = 1/MagFieldLFT.kB/T
     residual = exact_dyadic - JJderiv1*beta - 0.5*JJderiv2*beta^2
@@ -993,7 +994,10 @@ function test_SSbeta()
     mult = 3   # NiSAL has a triplet ground state
     S =  (mult-1)/2
 
-    SS_beta = MagFieldLFT.JJbeta(S)
+    Dtensor = zeros(3,3)
+    gmatrix = 2*Matrix(1.0I, 3, 3)
+    shparam = MagFieldLFT.SHParam(mult, gmatrix, Dtensor)
+    SS_beta = MagFieldLFT.JJbeta(shparam)
     SS_beta_ref = -S*(S+1)/3 *Matrix(1.0I, 3,3)
     return norm(SS_beta-SS_beta_ref) < 1e-15
 end
@@ -1007,8 +1011,8 @@ function test_SSbeta2()
    -16.580693    -7.191116    -0.939858]*MagFieldLFT.cmm1_Hartree   # directly convert from cm-1 to Hartree
     Dtensor = Dtensor - (tr(Dtensor)/3)*Matrix(1.0I, 3, 3)  # equation is only valid if D-tensor is traceless
 
-    Bkq = MagFieldLFT.trafo_Dtensor_WybourneBkq(Dtensor)
-    SS_beta2 = MagFieldLFT.JJbeta2(Bkq, S)
+    shparam = MagFieldLFT.SHParam(mult, 2*Matrix(1.0I, 3, 3), Dtensor)
+    SS_beta2 = MagFieldLFT.JJbeta2(shparam)
     SS_beta2_ref = S*(S+1)*(2S+3)*(2S-1)/15 * Dtensor
     return norm(SS_beta2-SS_beta2_ref) < 1e-15
 end
@@ -1024,8 +1028,8 @@ function test_SSbeta3()
     D2 = Dtensor * Dtensor
     trD2 = tr(D2)
     D2aniso = D2 - (trD2/3)*Matrix(1.0I, 3, 3)
-    Bkq = MagFieldLFT.trafo_Dtensor_WybourneBkq(Dtensor)
-    SS_beta3 = MagFieldLFT.JJbeta3(Bkq, S)
+    shparam = MagFieldLFT.SHParam(mult, 2*Matrix(1.0I, 3, 3), Dtensor)
+    SS_beta3 = MagFieldLFT.JJbeta3(shparam)
     SS_beta3_ref =  -S*(S+1)*(2S+3)*(2S-1)*((S+2)*(S-1)/17.5*D2aniso - trD2/30*Matrix(1.0I, 3, 3))
     return norm(SS_beta3-SS_beta3_ref) < 1e-15
 end
