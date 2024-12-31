@@ -1075,6 +1075,51 @@ function test_susceptibility_fromdyadic()
     return norm(susc-susc_fromdyadic) < 1e-10
 end
 
+# The results differ by 3/2 for axial part and sqrt(3/2) for rhombic part (no idea why).
+# When I insert parameters from Table S6 of Suturina et al. -> can reproduce experimental chi_ax, chi_rh
+# When I insert exact dyadic instead of second-order one -> can reproduce CASSCF chi_ax, chi_rh
+function test_Bleaney()
+    T = 298.0
+
+    # B20 and B22 constants of Tb complex from SI Table S8 of Suturina et al. (2017).
+    B20 = -437*MagFieldLFT.cmm1_Hartree
+    B22 = -142*MagFieldLFT.cmm1_Hartree
+    #B20 = -314*MagFieldLFT.cmm1_Hartree   # Test: reproduce experimental susc
+    #B22 = -250*MagFieldLFT.cmm1_Hartree   # Test: reproduce experimental susc
+    mu0 = 4pi*MagFieldLFT.alpha^2
+    muB = 0.5
+    CJ = -157.5   # from Table 1 of Bleaney (1972)
+
+    # Well-known equations for Bleaney's theory:
+    chi_ax_Bleaney = -mu0*muB^2*CJ*B20/10/(MagFieldLFT.kB*T)^2
+    chi_rh_Bleaney = -mu0*muB^2*CJ*B22/30/(MagFieldLFT.kB*T)^2
+
+    # Susceptibility from dyadic approximated to second order in beta:
+    Ln = "Tb"
+    shparam = MagFieldLFT.SHParam_lanthanoid("Bkq_$(Ln)_real", Ln)
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+    dyadic_order2 = MagFieldLFT.calc_dyadic_order2(shparam, T)
+    #dyadic_order2 = MagFieldLFT.calc_dyadic(sh, T)   # For test: exact dyadic!
+    susc_fromdyadic = MagFieldLFT.calc_susceptibility_fromdyadic(dyadic_order2, shparam.gtensor)
+    susc_fromdyadic_aniso = susc_fromdyadic - tr(susc_fromdyadic)/3*Matrix(1.0I, 3, 3)
+    vals = eigvals(susc_fromdyadic_aniso)
+    order = sortperm(vals, by=abs)   # convention: |chi_x| <= |chi_y| <= |chi_z|
+    chi_x = vals[order[1]]
+    chi_y = vals[order[2]]
+    chi_z = vals[order[3]]
+
+    chi_ax = chi_z - 0.5*(chi_x+chi_y)
+    chi_rh = 0.5*(chi_x - chi_y)
+
+    au2angstrom3 = (MagFieldLFT.a0/MagFieldLFT.angstrom)^3
+    println(chi_ax_Bleaney*au2angstrom3)
+    println(chi_ax*au2angstrom3)
+    println(chi_rh_Bleaney/chi_ax_Bleaney)
+    println(chi_rh/chi_ax)
+
+    return false
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1145,4 +1190,5 @@ end
     @test test_SSbeta3()
     @test test_susceptibility_Ln()
     @test test_susceptibility_fromdyadic()
+    @test_broken test_Bleaney()
 end
