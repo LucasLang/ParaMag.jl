@@ -398,3 +398,7 @@ function calc_dyadic_order3(shparam::SHParam, T::Real)
     beta = 1/kB/T
     return calc_dyadic_order2(shparam, T) + JJderiv3*beta^3/6
 end
+
+function calc_susceptibility_fromdyadic(dyadic::Matrix{Float64}, gtensor::Matrix{Float64})
+    return -pi*alpha^2 * gtensor * dyadic * gtensor'
+end

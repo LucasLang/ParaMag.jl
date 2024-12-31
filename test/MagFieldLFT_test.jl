@@ -1063,6 +1063,18 @@ function test_susceptibility_Ln()
     return abs(chi_ax-ref_chi_ax)<1e-10 && abs(rhombicity-ref_rhombicity)<1e-10
 end
 
+function test_susceptibility_fromdyadic()
+    Ln = "Tb"
+
+    shparam = MagFieldLFT.SHParam_lanthanoid("Bkq_$(Ln)_real", Ln)
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+    T = 298.0
+    susc = MagFieldLFT.calc_susceptibility_vanVleck(sh, T)
+    dyadic = MagFieldLFT.calc_dyadic(sh, T)
+    susc_fromdyadic = MagFieldLFT.calc_susceptibility_fromdyadic(dyadic, shparam.gtensor)
+    return norm(susc-susc_fromdyadic) < 1e-10
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1132,4 +1144,5 @@ end
     @test test_SSbeta2()
     @test test_SSbeta3()
     @test test_susceptibility_Ln()
+    @test test_susceptibility_fromdyadic()
 end
