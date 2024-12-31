@@ -377,3 +377,24 @@ function trafo_Dtensor_WybourneBkq(Dtensor::Matrix{T}) where T<:Real
     B2q = Dict(q => conj(tensor_2[q])/R2 for q in -2:2)
     return BkqParam(Dict(2 => B2q))
 end
+
+"""
+calc_dyadic_orderx: Calculate angular momentum dyadic truncated at a certain order in beta (1,2, or 3).
+"""
+function calc_dyadic_order1(shparam::SHParam, T::Real)
+    JJderiv1 = JJbeta(shparam)
+    beta = 1/kB/T
+    return JJderiv1*beta
+end
+
+function calc_dyadic_order2(shparam::SHParam, T::Real)
+    JJderiv2 = JJbeta2(shparam)
+    beta = 1/kB/T
+    return calc_dyadic_order1(shparam, T) + JJderiv2*beta^2/2
+end
+
+function calc_dyadic_order3(shparam::SHParam, T::Real)
+    JJderiv3 = JJbeta3(shparam)
+    beta = 1/kB/T
+    return calc_dyadic_order2(shparam, T) + JJderiv3*beta^3/6
+end

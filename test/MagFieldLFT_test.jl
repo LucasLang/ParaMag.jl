@@ -938,13 +938,11 @@ function test_JJbeta3()
     Ln = "Tb"
     shparam = MagFieldLFT.SHParam_lanthanoid("Bkq_$(Ln)_real", Ln)
     sh = MagFieldLFT.SpinHamiltonian(shparam)
-    JJderiv1 = MagFieldLFT.JJbeta(shparam)
-    JJderiv2 = MagFieldLFT.JJbeta2(shparam)
-    JJderiv3 = MagFieldLFT.JJbeta3(shparam)
+    dyadic_order2 = MagFieldLFT.calc_dyadic_order2(shparam, T)
+    dyadic_order3 = MagFieldLFT.calc_dyadic_order3(shparam, T)
     exact_dyadic = MagFieldLFT.calc_dyadic(sh, T)
-    beta = 1/MagFieldLFT.kB/T
-    residual = exact_dyadic - JJderiv1*beta - 0.5*JJderiv2*beta^2
-    beta3term = JJderiv3*beta^3/6
+    residual = exact_dyadic - dyadic_order2
+    beta3term = dyadic_order3 - dyadic_order2
     return norm(residual - beta3term)/norm(residual) <1e-2
 end
 
