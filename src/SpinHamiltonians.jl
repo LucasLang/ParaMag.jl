@@ -10,6 +10,7 @@ mult:    Spin multiplicity (=2S+1, where S is the total spin quantum number)
 gtensor: Zeeman tensor parametrizing the electronic magnetic moment
 Dtensor: Zero-field splitting tensor
 Atensors: Hyperfine coupling tensors parametrizing the magnetic field created by the electrons
+gammas: Gyromagnetic ratios
 """
 struct SHParam
     mult::Int64
@@ -40,6 +41,19 @@ function SHParam_lanthanoid(filename::String, Ln::String, format="Wyb_real")
     mult = Int64(2J+1)
     gtensor = Lande_gJ[Ln]*Matrix(1.0I, 3, 3)
     return SHParam(mult, gtensor, Bkq)
+end
+
+"""
+gtensor: Spin Hamiltonian parameter describing the electronic magnetic moment operator
+gammas: Gyromagnetic ratios of the nuclei of interest
+R: Nuclear positions relative to the paramagnetic center (metal)
+
+gammas and R must have the same length (number of nuclei for which we calculate the Atensors).
+"""
+function calc_Atensors_PDA(gtensor::Matrix{Float64}, gammas::Vector{Float64}, R::Vector{Vector{Float64}})
+    Nnuc = length(gammas)
+    @assert Nnuc == length(R)
+    return [alpha^2*gammas[A]/2*calc_dipole_matrix(R[A])*gtensor for A in 1:Nnuc]
 end
 
 """

@@ -853,6 +853,10 @@ function test_STOs()
 end
 
 function test_PCS_PDA_finitefield_SH()
+    gamma_1H = 2.6752e8*1e-6      # proton gyromagnetic ratio in rad/s/T
+    trafo_au = 0.12345   # XXXLucasXXX: to do: figure out correct trafo (does not matter here because shifts are independent of gyromagnetic ratios)
+    gamma_1H *= trafo_au
+
     mult = 3   # NiSAL has a triplet ground state
 
     Dtensor = [  3.053926    -5.555174   -16.580693;
@@ -863,13 +867,17 @@ function test_PCS_PDA_finitefield_SH()
     0.0074791    2.0934328    0.0112682;
     0.0228213    0.0119502    2.1324169]
 
-    sh = MagFieldLFT.SpinHamiltonian(mult, gtensor, Dtensor)
+    Nnuc = length(R_selected_NiSAL)
+    gammas = [gamma_1H for A in 1:Nnuc]
+    Atensors = MagFieldLFT.calc_Atensors_PDA(gtensor, gammas, R_selected_NiSAL)
+    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor, Atensors, gammas)   # XXXLucasXXX: Fallback constructor does not work!
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
 
     T = 298.0
     grid = lebedev_grids[20]
     B0_MHz = 10.0
     B0 = B0_MHz/42.577478518/2.35051756758e5
-    finitefield_shifts = MagFieldLFT.estimate_shifts_finitefield(sh, R_selected_NiSAL, B0, T, grid)
+    finitefield_shifts = MagFieldLFT.estimate_shifts_finitefield(sh, B0, T, grid)
     KMcG_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey(sh, R_selected_NiSAL, T)
     return norm(finitefield_shifts-KMcG_shifts) < 1e-5
 end
@@ -1175,7 +1183,7 @@ end
     @test test_KurlandMcGarvey_vs_finitefield_Lebedev_ord4()
     @test test_cubicresponse_spin()
     @test test_STOs()
-    @test_broken test_PCS_PDA_finitefield_SH()
+    @test test_PCS_PDA_finitefield_SH()
     @test test_Wybourne()
     @test test_H_fieldfree_Wyb()
     @test test_JJbeta()
