@@ -1112,10 +1112,10 @@ function test_Bleaney()
     chi_rh = 0.5*(chi_x - chi_y)
 
     au2angstrom3 = (MagFieldLFT.a0/MagFieldLFT.angstrom)^3
-    println(chi_ax_Bleaney*au2angstrom3)
-    println(chi_ax*au2angstrom3)
-    println(chi_rh_Bleaney/chi_ax_Bleaney)
-    println(chi_rh/chi_ax)
+    #println(chi_ax_Bleaney*au2angstrom3)
+    #println(chi_ax*au2angstrom3)
+    #println(chi_rh_Bleaney/chi_ax_Bleaney)
+    #println(chi_rh/chi_ax)
 
     return false
 end

@@ -426,11 +426,11 @@ end
 
 """
 Returns the chemical shifts in ppm calculated according to the Kurland-McGarvey equation (point-dipole approximation)
+chi: Susceptibility tensor
 R: Vectors from the points at which we want to know the induced field (typically nuclear positions) to the paramagnetic center (atomic units = Bohr)
 T: Temperature (Kelvin)
 """
-function calc_shifts_KurlandMcGarvey(model::CompModel, R::Vector{Vector{Float64}}, T::Real)
-    chi = calc_susceptibility_vanVleck(model, T)
+function calc_shifts_KurlandMcGarvey(chi::Matrix{Float64}, R::Vector{Vector{Float64}}, T::Real)
     shifts = Vector{Float64}(undef, 0)
     for Ri in R
         D = calc_dipole_matrix(Ri)
@@ -440,6 +440,17 @@ function calc_shifts_KurlandMcGarvey(model::CompModel, R::Vector{Vector{Float64}
     end
     shifts *= 1e6    # convert to ppm
     return shifts
+end
+
+"""
+Returns the chemical shifts in ppm calculated according to the Kurland-McGarvey equation (point-dipole approximation)
+model: Computational model (e.g. LFT or SpinHamiltonian) to calculate the susceptibility tensor.
+R: Vectors from the points at which we want to know the induced field (typically nuclear positions) to the paramagnetic center (atomic units = Bohr)
+T: Temperature (Kelvin)
+"""
+function calc_shifts_KurlandMcGarvey(model::CompModel, R::Vector{Vector{Float64}}, T::Real)
+    chi = calc_susceptibility_vanVleck(model, T)
+    return calc_shifts_KurlandMcGarvey(chi, R, T)
 end
 
 function Brillouin(S::Float64, T::Float64, B0::Float64)
