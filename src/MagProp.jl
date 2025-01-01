@@ -400,7 +400,8 @@ function calc_F_deriv4(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
 end
 
 function calc_Mel(model::CompModel)
-    return [sum([model.Mel_trafo[i,j] * model.base_op[j] for j in 1:3]) for i in 1:3]
+    # Matrix-vector multiplication where the elements of the vector are themselves matrices
+    return model.Mel_trafo*model.base_op
 end
 
 function F_deriv_param2states(calc_F_derivx::Function)
