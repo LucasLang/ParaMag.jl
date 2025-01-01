@@ -45,9 +45,9 @@ end
 """
 S::(Pseudo)spin quantum number
 H_fieldfree: The field-free Hamiltonian
-Mel_trafo:: Matrix applied to base operators to get magnetic moment operators (here: using g-tensor)
-BHF_trafo:: Matrix applied to base operators to get hyperfine field operators (here: using HFC A-tensors)
-base_op:: base operators (here: spin operators)
+Mel_trafo:: Matrix applied to vector of base operators to get magnetic moment operators (here: using g-tensor)
+BHF_trafo:: Matrix applied to vector of base operators to get hyperfine field operators (here: using HFC A-tensors)
+base_op:: vector of base operators (here: spin operators)
 """
 struct SpinHamiltonian <: CompModel
     S::Float64

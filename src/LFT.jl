@@ -17,9 +17,9 @@ end
 
 """
 H_fieldfree: The field-free Hamiltonian
-Mel_trafo:: Matrix applied to base operators to get magnetic moment operators (here: unit matrix)
-BHF_trafo:: Matrix applied to base operators to get hyperfine field operators (here: using PDA)
-base_op:: base operators (here: magnetic moment operators)
+Mel_trafo:: Matrix applied to vector of base operators to get magnetic moment operators (here: unit matrix)
+BHF_trafo:: Matrix applied to vector of base operators to get hyperfine field operators (here: using PDA)
+base_op:: vector of base operators (here: magnetic moment operators)
 """
 struct LFT <: CompModel
     H_fieldfree::HermMat

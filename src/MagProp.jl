@@ -98,14 +98,14 @@ function calc_Zel(energies::Vector{Float64}, T::Real)
     Z = sum(energies_exp)   # canonical partition function
 end
 
-function calc_average_magneticmoment(energies::Vector{Float64}, states::Matrix{ComplexF64}, Mel::Vector{Matrix{ComplexF64}}, T::Real)
+function calc_Boltzmann_averaged_ops(energies::Vector{Float64}, states::Matrix{ComplexF64}, ops::Vector{Matrix{ComplexF64}}, T::Real)
     beta = 1/(kB*T)
     energies_exp = exp.(-beta*energies)
     Zel = sum(energies_exp)   # canonical partition function
-    Mel_eigenbasis = [states'*Melcomp*states for Melcomp in Mel]
-    Mel_avg = [sum(energies_exp .* diag(Mel_eigenbasis_comp))/Zel for Mel_eigenbasis_comp in Mel_eigenbasis]
-    @assert norm(imag(Mel_avg))/norm(real(Mel_avg)) < 1e-5    # energies need to be real
-    return real(Mel_avg)
+    ops_eigenbasis = [states'*op*states for op in ops]
+    ops_avg = [sum(energies_exp .* diag(op_eigenbasis))/Zel for op_eigenbasis in ops_eigenbasis]
+    @assert norm(imag(ops_avg))/norm(real(ops_avg)) < 1e-5    # energies need to be real
+    return real(ops_avg)
 end
 
 function calc_F_deriv1(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hderiv::Vector{Matrix{ComplexF64}}, T::Real)
@@ -181,6 +181,19 @@ function calc_Bind_avg_lab_z(chi::Real, theta::Real, Bind_avg_mol::Vector{Float6
 end
 
 """
+Idea behind implementation: If there are MANY nuclei (many elements of model.BHF_trafo),
+then it is cheaper to first calculate the Boltzmann average of the base operators and then
+transform these averages with the BHF_trafos instead of first getting many HF operators
+and calculating Boltzmann averages for all of them separately.
+(This is e.g. relevant when modeling the full f^n manifold of a lanthanoid complex,
+which can comprise more than 1000 states.)
+"""
+function calc_Bind_avg_mol(model::CompModel, energies::Vector{Float64}, states::Matrix{ComplexF64}, T::Real)
+    base_op_avg = calc_Boltzmann_averaged_ops(energies, states, model.base_op, T)
+    return [BHF_trafo_i*base_op_avg for BHF_trafo_i in model.BHF_trafo]
+end
+
+"""
 For a specific orientation of the molecule (parametrized in terms of Euler angles),
 this function calculates all the integrands that occur in the numerator for the different nuclei,
 and the integrand in the denominator (which is just Zel).
@@ -198,7 +211,7 @@ function calc_integrands(theta::Real, chi::Real, H_fieldfree::HermMat, Mel::Vect
     B0_mol = calc_B0_mol(B0, chi, theta)
     energies, states = calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Zel = calc_Zel(energies, T)
-    Mel_avg_mol = calc_average_magneticmoment(energies, states, Mel, T)
+    Mel_avg_mol = calc_Boltzmann_averaged_ops(energies, states, Mel, T)
     Bind_avg_mol = [dipole_field(Mel_avg_mol, R_i) for R_i in R]
     Bind_avg_lab_z = [calc_Bind_avg_lab_z(chi, theta, B_i) for B_i in Bind_avg_mol]
     return [Zel*Bind_avg_lab_z; Zel]

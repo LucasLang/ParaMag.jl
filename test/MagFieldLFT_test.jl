@@ -374,7 +374,7 @@ function test_average_magnetic_moment2()
     T = 1.0
     energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Mel = MagFieldLFT.calc_magneticmoment_operator(L,S)
-    Mel_avg = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
+    Mel_avg = MagFieldLFT.calc_Boltzmann_averaged_ops(energies, states, Mel, T)
     return Mel_avg ≈ [-0.0003645214756898332, -1.2322563787476262e-13, 1.4631881898029349]
 end
 
@@ -394,7 +394,7 @@ function test_average_magnetic_moment3()
 
     H_fieldfree, Mel = MagFieldLFT.calc_operators(param)
     energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
-    Mel_avg_finitefield = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
+    Mel_avg_finitefield = MagFieldLFT.calc_Boltzmann_averaged_ops(energies, states, Mel, T)
 
     return norm(Mel_avg_finitefield - [0.0, 0.0, 0.5]) < 1.0e-4
 end
@@ -478,7 +478,7 @@ function test_calc_susceptibility_vanVleck()
     # version 2
     H_fieldfree, Mel = MagFieldLFT.calc_operators(param)
     energies, states = MagFieldLFT.calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
-    Mel_avg_finitefield = MagFieldLFT.calc_average_magneticmoment(energies, states, Mel, T)
+    Mel_avg_finitefield = MagFieldLFT.calc_Boltzmann_averaged_ops(energies, states, Mel, T)
 
     return norm(Mel_avg_finitefield - Mel_avg_linear) < 1.0e-10
 end
