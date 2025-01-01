@@ -197,6 +197,27 @@ end
 For a specific orientation of the molecule (parametrized in terms of Euler angles),
 this function calculates all the integrands that occur in the numerator for the different nuclei,
 and the integrand in the denominator (which is just Zel).
+
+model: The computational model used (e.g. LFT or SpinHamiltonian)
+theta: Euler angle: Angle between z axis (molecular frame) and Z axis (lab frame)
+chi: Euler angle describing rotations of the molecule around its molecular frame z axis
+B0: Magnitude of the external magnetic field (atomic units)
+T: Temperature (Kelvin)
+"""
+function calc_integrands(model::CompModel, theta::Real, chi::Real, B0::Real, T::Real)
+    B0_mol = calc_B0_mol(B0, chi, theta)
+    Mel = calc_Mel(model)
+    energies, states = calc_solutions_magfield(model.H_fieldfree, Mel, B0_mol)
+    Zel = calc_Zel(energies, T)
+    Bind_avg_mol = calc_Bind_avg_mol(model, energies, states, T)
+    Bind_avg_lab_z = [calc_Bind_avg_lab_z(chi, theta, B_i) for B_i in Bind_avg_mol]
+    return [Zel*Bind_avg_lab_z; Zel]
+end
+
+"""
+For a specific orientation of the molecule (parametrized in terms of Euler angles),
+this function calculates all the integrands that occur in the numerator for the different nuclei,
+and the integrand in the denominator (which is just Zel).
 Currently, Bind_avg_mol is calculated in the point-dipole approximation.
 
 theta: Euler angle: Angle between z axis (molecular frame) and Z axis (lab frame)
@@ -207,7 +228,7 @@ R: Vectors from the points at which we want to know the induced field (typically
 B0: Magnitude of the external magnetic field (atomic units)
 T: Temperature (Kelvin)
 """
-function calc_integrands(theta::Real, chi::Real, H_fieldfree::HermMat, Mel::Vector{Matrix{ComplexF64}}, R::Vector{Vector{Float64}}, B0::Real, T::Real)
+function calc_integrands_old(theta::Real, chi::Real, H_fieldfree::HermMat, Mel::Vector{Matrix{ComplexF64}}, R::Vector{Vector{Float64}}, B0::Real, T::Real)
     B0_mol = calc_B0_mol(B0, chi, theta)
     energies, states = calc_solutions_magfield(H_fieldfree, Mel, B0_mol)
     Zel = calc_Zel(energies, T)
@@ -218,11 +239,25 @@ function calc_integrands(theta::Real, chi::Real, H_fieldfree::HermMat, Mel::Vect
 end
 
 """
+model: The computational model used (e.g. LFT or SpinHamiltonian)
+B0: Magnitude of the external magnetic field (atomic units)
+T: Temperature (Kelvin)
+grid: grid for numerical integration
+"""
+function calc_Bind(model::CompModel, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
+    integrands(theta, chi) = calc_integrands(model, theta, chi, B0, T)
+    integrals = integrate_spherical(integrands, grid)
+    numerators = integrals[1:(end-1)]
+    D = integrals[end]   # denominator (normalization)
+    return [N/D for N in numerators]
+end
+
+"""
 R: Vectors from the points at which we want to know the induced field (typically nuclear positions) to the paramagnetic center (atomic units = Bohr)
 B0: Magnitude of the external magnetic field (atomic units)
 T: Temperature (Kelvin)
 """
-function calc_Bind(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
+function calc_Bind_old(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
     Mel = calc_Mel(model)
     integrands(theta, chi) = calc_integrands(theta, chi, model.H_fieldfree, Mel, R, B0, T)
     integrals = integrate_spherical(integrands, grid)
@@ -231,7 +266,12 @@ function calc_Bind(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Re
     return [N/D for N in numerators]
 end
 
-function estimate_shifts_finitefield(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
+function estimate_shifts_finitefield(model::CompModel, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
+    Bind_values = calc_Bind(model, B0, T, grid)
+    return (Bind_values / B0) * 1e6    # convert to ppm
+end
+
+function estimate_shifts_finitefield_old(model::CompModel, R::Vector{Vector{Float64}}, B0::Real, T::Real, grid::Vector{Tuple{Float64, Float64, Float64}})
     Bind_values = calc_Bind(model, R, B0, T, grid)
     return (Bind_values / B0) * 1e6    # convert to ppm
 end
