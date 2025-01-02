@@ -442,8 +442,23 @@ function calc_susceptibility_vanVleck(model::CompModel, T::Real)
     return -4pi*alpha^2 * model.Mel_trafo * Fderiv2 * model.Mel_trafo'
 end
 
-#function calc_shielding(model::CompModel, T::Real)
-#end
+function calc_shieldings(model::CompModel, T::Real)
+    B = [0.0, 0.0, 0.0]
+    Fderiv2 = calc_F_deriv2(model, T, B)
+    Fderiv2_halftransformed = model.Mel_trafo * Fderiv2
+    return [Fderiv2_halftransformed * BHF_trafo_i' for BHF_trafo_i in model.BHF_trafo]
+end
+
+function calc_fieldindep_shift(shielding::Matrix{Float64})
+    return -tr(shielding)/3
+end
+
+function calc_fieldindep_shifts(model::CompModel, T::Real)
+    shieldings = calc_shieldings(model, T)
+    shifts = [calc_fieldindep_shift(shielding) for shielding in shieldings]
+    shifts *= 1e6   # convert to ppm
+    return shifts
+end
 
 """
 Returns the chemical shifts in ppm calculated according to the Kurland-McGarvey equation (point-dipole approximation)

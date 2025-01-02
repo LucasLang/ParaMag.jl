@@ -1129,7 +1129,30 @@ function test_Bleaney()
 end
 
 function test_PDA_SH_general_vs_specific()
-    return false
+    gamma_1H = 2.6752e8*1e-6      # proton gyromagnetic ratio in rad/s/T
+    trafo_au = 0.12345   # XXXLucasXXX: to do: figure out correct trafo (does not matter here because shifts are independent of gyromagnetic ratios)
+    gamma_1H *= trafo_au
+
+    mult = 3   # NiSAL has a triplet ground state
+
+    Dtensor = [  3.053926    -5.555174   -16.580693;
+    -5.555174    22.210495    -7.191116;
+   -16.580693    -7.191116    -0.939858]*MagFieldLFT.cmm1_Hartree   # directly convert from cm-1 to Hartree
+
+    gtensor = [2.1384111    0.0084976    0.0250646;
+    0.0074791    2.0934328    0.0112682;
+    0.0228213    0.0119502    2.1324169]
+
+    Nnuc = length(R_selected_NiSAL)
+    gammas = [gamma_1H for A in 1:Nnuc]
+    Atensors = MagFieldLFT.calc_Atensors_PDA(gtensor, gammas, R_selected_NiSAL)
+    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor, Atensors, gammas)   # XXXLucasXXX: Fallback constructor does not work!
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+
+    T = 298.0
+    KMcG_shifts = MagFieldLFT.calc_shifts_KurlandMcGarvey(sh, R_selected_NiSAL, T)
+    shifts_generalfunction = MagFieldLFT.calc_fieldindep_shifts(sh, T)
+    return norm(KMcG_shifts-shifts_generalfunction) < 1e-10
 end
 
 @testset "MagFieldLFT.jl" begin
@@ -1203,5 +1226,5 @@ end
     @test test_susceptibility_Ln()
     @test test_susceptibility_fromdyadic()
     @test_broken test_Bleaney()
-    @test_broken test_PDA_SH_general_vs_specific()
+    @test test_PDA_SH_general_vs_specific()
 end
