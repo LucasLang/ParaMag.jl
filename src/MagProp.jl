@@ -414,16 +414,23 @@ function calc_Mel(model::CompModel)
     return model.Mel_trafo*model.base_op
 end
 
+"""
+For a general CompModel (which means LFT or SpinHamiltonian),
+the "Hamiltonian derivatives" are taken to be the base operators,
+because both electronic magnetic moment and hyperfield operators
+can be expressed in terms of them.
+"""
 function F_deriv_param2states(calc_F_derivx::Function)
     function calc_F_deriv_param(model::CompModel, T::Real, B0_mol::Vector{Float64})
         Mel = calc_Mel(model)
-        Hderiv = -Mel
+        Hderiv = model.base_op
         energies, states = calc_solutions_magfield(model.H_fieldfree, Mel, B0_mol)
         return calc_F_derivx(energies, states, Hderiv, T)
     end
     return calc_F_deriv_param
 end
 
+# XXXLucasXXX: should probably do the following with a macro at compile time
 calc_F_deriv1(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_param2states(calc_F_deriv1)(model, T, B0_mol)
 calc_F_deriv2(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_param2states(calc_F_deriv2)(model, T, B0_mol)
 calc_F_deriv3(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_param2states(calc_F_deriv3)(model, T, B0_mol)
@@ -432,8 +439,11 @@ calc_F_deriv4(model::CompModel, T::Real, B0_mol::Vector{Float64}) = F_deriv_para
 function calc_susceptibility_vanVleck(model::CompModel, T::Real)
     B = [0.0, 0.0, 0.0]
     Fderiv2 = calc_F_deriv2(model, T, B)
-    return -4pi*alpha^2 * Fderiv2
+    return -4pi*alpha^2 * model.Mel_trafo * Fderiv2 * model.Mel_trafo'
 end
+
+#function calc_shielding(model::CompModel, T::Real)
+#end
 
 """
 Returns the chemical shifts in ppm calculated according to the Kurland-McGarvey equation (point-dipole approximation)

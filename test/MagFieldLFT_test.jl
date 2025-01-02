@@ -1128,6 +1128,10 @@ function test_Bleaney()
     return false
 end
 
+function test_PDA_SH_general_vs_specific()
+    return false
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1199,4 +1203,5 @@ end
     @test test_susceptibility_Ln()
     @test test_susceptibility_fromdyadic()
     @test_broken test_Bleaney()
+    @test_broken test_PDA_SH_general_vs_specific()
 end
