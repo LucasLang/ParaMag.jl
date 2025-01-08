@@ -555,3 +555,18 @@ function Bkq_real2complex(bkq_real)
     end
     return BkqParam(bkq_complex)
 end
+
+function Wyb2Stevens(bkq, Ln)
+    #order k=2,4,6 and q=-k,...,k
+    #returns Bkq in Stevens formalism (NOT multiplied by theta factor)
+    bkq_c = []
+    count = 0
+    for k in 2:2:6
+        for q in -k:k
+            count += 1
+            push!(bkq_c, bkq[count]/conv_Wyb2Stev[(k,abs(q))])    # *theta_factors[(Ln,k)])
+        end
+    end
+
+    return bkq_c
+end
