@@ -4,6 +4,8 @@ const mu0 = 4pi*alpha^2
 const cmm1_Hartree = 4.55633525e-06   # cm-1 / Ha
 const a0 = 5.29177210544e-11  # Bohr radius in m (SI)
 const angstrom = 1e-10        # angstrom in m (SI)
+const au_time = 2.4188843265864e-17       # atomic unit of time in seconds
+const au_fluxdensity = 2.35051757077e5    # atomic unit of magnetic flux density in Tesla
 
 # values for the following two dictionaries are taken from Table 1 of
 # Parker et al., Acc. Chem. Res. 2020, 53, 1520-1534.

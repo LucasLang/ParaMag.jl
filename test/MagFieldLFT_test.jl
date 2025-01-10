@@ -548,7 +548,10 @@ function test_Fderiv2_numeric_vs_analytic()
     Fderiv2_numeric[1, :] = (1/h)*(Fderiv1_x - Fderiv1_0)
     Fderiv2_numeric[2, :] = (1/h)*(Fderiv1_y - Fderiv1_0)
     Fderiv2_numeric[3, :] = (1/h)*(Fderiv1_z - Fderiv1_0)
-    return norm(Fderiv2-Fderiv2_numeric) < 0.1
+    # numerically, we calculate the derivative with respect to B0, which corresponds to the perturbation operator Mel
+    # but analytically, the perturbation operator (base_op of the LFT model) is +Mel
+    # => the two numbers will differ by a sign
+    return norm(Fderiv2+Fderiv2_numeric) < 0.1
 end
 
 function test_Fderiv3_numeric_vs_analytic()
@@ -566,8 +569,11 @@ function test_Fderiv3_numeric_vs_analytic()
     Fderiv3_numeric[1, :, :] = (1/h)*(Fderiv2_x - Fderiv2_0)
     Fderiv3_numeric[2, :, :] = (1/h)*(Fderiv2_y - Fderiv2_0)
     Fderiv3_numeric[3, :, :] = (1/h)*(Fderiv2_z - Fderiv2_0)
+    # numerically, we calculate the derivative with respect to B0, which corresponds to the perturbation operator Mel
+    # but analytically, the perturbation operator (base_op of the LFT model) is +Mel
+    # => the two numbers will differ by a sign
     # note: elements of the tensor have magnitudes that are all larger than 1e5
-    return norm(Fderiv3-Fderiv3_numeric) < 8000
+    return norm(Fderiv3+Fderiv3_numeric) < 8000
 end
 
 function test_Fderiv4_numeric_vs_analytic()
@@ -585,7 +591,10 @@ function test_Fderiv4_numeric_vs_analytic()
     Fderiv4_numeric[1, :, :, :] = (1/h)*(Fderiv3_x - Fderiv3_0)
     Fderiv4_numeric[2, :, :, :] = (1/h)*(Fderiv3_y - Fderiv3_0)
     Fderiv4_numeric[3, :, :, :] = (1/h)*(Fderiv3_z - Fderiv3_0)
-    return rel_diff_norm(Fderiv4, Fderiv4_numeric) < 1e-4
+    # numerically, we calculate the derivative with respect to B0, which corresponds to the perturbation operator Mel
+    # but analytically, the perturbation operator (base_op of the LFT model) is +Mel
+    # => the two numbers will differ by a sign
+    return rel_diff_norm(Fderiv4, -Fderiv4_numeric) < 1e-4
 end
 
 function test_Fderiv4_numeric_vs_analytic_zerofield()
@@ -603,7 +612,10 @@ function test_Fderiv4_numeric_vs_analytic_zerofield()
     Fderiv4_numeric[1, :, :, :] = (1/h)*(Fderiv3_x - Fderiv3_0)
     Fderiv4_numeric[2, :, :, :] = (1/h)*(Fderiv3_y - Fderiv3_0)
     Fderiv4_numeric[3, :, :, :] = (1/h)*(Fderiv3_z - Fderiv3_0)
-    return rel_diff_norm(Fderiv4, Fderiv4_numeric) < 1e-4
+    # numerically, we calculate the derivative with respect to B0, which corresponds to the perturbation operator Mel
+    # but analytically, the perturbation operator (base_op of the LFT model) is +Mel
+    # => the two numbers will differ by a sign
+    return rel_diff_norm(Fderiv4, -Fderiv4_numeric) < 1e-4
 end
 
 function rel_diff_norm(value, ref)
@@ -752,22 +764,29 @@ end
 
 
 function test_calc_contactshift()
+    mult = 3
 
     from_au = 27.2113834*8065.54477
     #from casscf-nevpt2 effective hamiltonian
     D = [3.021254 -5.482999 -16.364810; -5.482999 21.938653 -7.107412; -16.364810 -7.107412 -0.931482]
-    D /= from_au  #from cm-1 in au
+    D *= MagFieldLFT.cmm1_Hartree  #from cm-1 to au (Hartree)
 
     #from casscf-nevpt2 effective hamiltonian
     g = [2.320356 0.036880 0.109631; 0.036810 2.180382 0.053365; 0.109499 0.053077 2.347002]
     #from DFT calc
-    Aiso = [-0.2398	0.3677	-0.0953	0.1169	5.6311	0.8206	2.5466	0.9669	2.2237	-0.2058	0.3801	-0.0323	0.0943	5.7383	-0.1162	-0.1048	1.3015	4.0604	3.9516	0.929	-0.1677	-0.2015	-3.5469]
+    Aiso_values_MHz = [-0.2398,	0.3677	,-0.0953	,0.1169,	5.6311,	0.8206,	2.5466,	0.9669,	2.2237,	-0.2058,	0.3801,	-0.0323,	0.0943,	5.7383,	-0.1162,	-0.1048,	1.3015,	4.0604,	3.9516,	0.929,	-0.1677,	-0.2015,	-3.5469]
+    Aiso_values_Hartree = Aiso_values_MHz * 1e6 * 2pi * MagFieldLFT.au_time  # conversion from frequency to energy in atomic units: E = omega = 2pi nu
+    Atensors = [Aiso*Matrix(1.0I, 3, 3) for Aiso in Aiso_values_Hartree]
+    Nnuc = length(Atensors)
+    gamma_1H = 2.6752e8      # proton gyromagnetic ratio in rad/s/T
+    gamma_1H *= MagFieldLFT.au_time * MagFieldLFT.au_fluxdensity # proton gyromagnetic ratio in atomic units
+    gammas = [gamma_1H for A in 1:Nnuc]
+
     T = 298.0
 
-    B0_MHz = 400. 
-    B0 = B0_MHz/42.577478518/2.35051756758e5
-
-    shiftcon = MagFieldLFT.calc_contactshift_fielddep(1.0, Aiso, g, D, T, 0.0, false, false)
+    shparam = MagFieldLFT.SHParam(mult, g, D, Atensors, gammas)
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+    shiftcon = MagFieldLFT.calc_fieldindep_shifts(sh, T)
     
     indices = [1, 23, 5, 14]
     calc_shift = [shiftcon[i] for i in indices]
@@ -853,9 +872,8 @@ function test_STOs()
 end
 
 function test_PCS_PDA_finitefield_SH()
-    gamma_1H = 2.6752e8*1e-6      # proton gyromagnetic ratio in rad/s/T
-    trafo_au = 0.12345   # XXXLucasXXX: to do: figure out correct trafo (does not matter here because shifts are independent of gyromagnetic ratios)
-    gamma_1H *= trafo_au
+    gamma_1H = 2.6752e8      # proton gyromagnetic ratio in rad/s/T
+    gamma_1H *= MagFieldLFT.au_time * MagFieldLFT.au_fluxdensity # proton gyromagnetic ratio in atomic units
 
     mult = 3   # NiSAL has a triplet ground state
 
@@ -870,7 +888,7 @@ function test_PCS_PDA_finitefield_SH()
     Nnuc = length(R_selected_NiSAL)
     gammas = [gamma_1H for A in 1:Nnuc]
     Atensors = MagFieldLFT.calc_Atensors_PDA(gtensor, gammas, R_selected_NiSAL)
-    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor, Atensors, gammas)   # XXXLucasXXX: Fallback constructor does not work!
+    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor, Atensors, gammas)
     sh = MagFieldLFT.SpinHamiltonian(shparam)
 
     T = 298.0
@@ -1129,9 +1147,8 @@ function test_Bleaney()
 end
 
 function test_PDA_SH_general_vs_specific()
-    gamma_1H = 2.6752e8*1e-6      # proton gyromagnetic ratio in rad/s/T
-    trafo_au = 0.12345   # XXXLucasXXX: to do: figure out correct trafo (does not matter here because shifts are independent of gyromagnetic ratios)
-    gamma_1H *= trafo_au
+    gamma_1H = 2.6752e8      # proton gyromagnetic ratio in rad/s/T
+    gamma_1H *= MagFieldLFT.au_time * MagFieldLFT.au_fluxdensity # proton gyromagnetic ratio in atomic units
 
     mult = 3   # NiSAL has a triplet ground state
 
@@ -1146,7 +1163,7 @@ function test_PDA_SH_general_vs_specific()
     Nnuc = length(R_selected_NiSAL)
     gammas = [gamma_1H for A in 1:Nnuc]
     Atensors = MagFieldLFT.calc_Atensors_PDA(gtensor, gammas, R_selected_NiSAL)
-    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor, Atensors, gammas)   # XXXLucasXXX: Fallback constructor does not work!
+    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor, Atensors, gammas)
     sh = MagFieldLFT.SpinHamiltonian(shparam)
 
     T = 298.0
@@ -1206,7 +1223,7 @@ end
     @test test_group_eigenvalues()
     @test test_print_composition2()
     @test_broken test_print_composition_ErIII()
-    @test_broken test_calc_contactshift()
+    @test test_calc_contactshift()
     @test test_KurlandMcGarvey_vs_finitefield_Lebedev_ord4()
     @test test_cubicresponse_spin()
     @test test_STOs()
