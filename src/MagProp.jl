@@ -460,6 +460,54 @@ function calc_fieldindep_shifts(model::CompModel, T::Real)
     return shifts
 end
 
+function calc_tau_tensors(model::CompModel, T::Real)
+    B0 = [0.0, 0.0, 0.0]
+    Fderiv4 = calc_F_deriv4(model, T, B0)    # with base_op as perturbation operators
+
+    function trafo(Fderiv4, M, B)
+        @tensor begin
+            tau[j, k, l, i] := M[j, m] * M[k, n] * M[l, o] * B[i, p] * Fderiv4[m, n, o, p]
+        end
+    end
+
+    return (1/6)*[trafo(Fderiv4, model.Mel_trafo, BHF_trafo_i) for BHF_trafo_i in model.BHF_trafo]
+end
+
+function calc_fielddep_shifts_2ndorder_direct(model::CompModel, T::Real, B0::Real)
+    tau_tensors = calc_tau_tensors(model, T)
+    shifts = [-(1/5)*trace_ord2(tau_tensor)*B0^2 for tau_tensor in tau_tensors]
+    shifts *= 1e6   # convert to ppm
+    return shifts
+end
+
+function calc_fielddep_shifts_2ndorder_indirect(model::CompModel, T::Real, B0::Real)
+    beta = 1/kB/T
+    mu0 = 4pi*alpha^2
+    chi = calc_susceptibility_vanVleck(model, T)
+    sigmas = calc_shieldings(model, T)
+    shifts = [((1/45)*beta/mu0 *tr(sigma)*tr(chi) -(1/15)*beta/mu0 *tr(sigma*chi))*B0^2 for sigma in sigmas]
+    shifts *= 1e6   # convert to ppm
+    return shifts
+end
+
+"""
+This function only calculates the field-dependent part of the shift (at second order in B0).
+"""
+function calc_fielddep_shifts_2ndorder(model::CompModel, T::Real, B0::Real)
+    shifts_direct = calc_fielddep_shifts_2ndorder_direct(model, T, B0)
+    shifts_indirect = calc_fielddep_shifts_2ndorder_indirect(model, T, B0)
+    return shifts_direct + shifts_indirect
+end
+
+"""
+This function calculates the total shifts up to 2nd order in B0 (including field-independent shifts).
+"""
+function calc_shifts_2ndorder_total(model::CompModel, T::Real, B0::Real)
+    fieldindep_shifts = calc_fieldindep_shifts(model, T)
+    fielddep_shifts = calc_fielddep_shifts_2ndorder(model, T, B0)
+    return fieldindep_shifts + fielddep_shifts
+end
+
 """
 Returns the chemical shifts in ppm calculated according to the Kurland-McGarvey equation (point-dipole approximation)
 chi: Susceptibility tensor
@@ -528,7 +576,7 @@ end
 function trace_ord2(tensor::Array{Float64, 4})
     # computes the order 2 trace of a supersymmetric fourth order tensor
 
-    trace = @tensor begin    # XXXLucasLangXXX: trace should be deleted either in this or the next line
+    @tensor begin
         trace = tensor[i, i, j, j]
     end
 
@@ -537,9 +585,6 @@ end
 
 function product_ord3(tensor::Array{Float64, 4}, Dip::Array{Float64, 2})
     #dot product between two fourth order tensors
-
-    sigma = zeros(Float64, 3, 3, 3, 3)
-
     @tensor begin
         sigma[l, m, n, k] := tensor[l, m, n, q] * Dip[q, k]
     end

@@ -824,20 +824,17 @@ function test_KurlandMcGarvey_vs_finitefield_Lebedev_ord4()
     R = convert(Vector{Vector{Float64}}, coordinate_H) ./ bohrinangstrom
 
     lft = MagFieldLFT.LFT(param, R)
-    shift_0 = MagFieldLFT.calc_shifts_KurlandMcGarvey_ord4(lft, R, T, 0.0, false, false)
+    # field-independent shifts:
+    shift_0 = MagFieldLFT.calc_fieldindep_shifts(lft, T)
     grid = lebedev_grids[20]
-    B0_single = [10.]
-    diff_list_ord4 = []
-    diff_list_finitefield = []
-    for B0_MHz in B0_single 
-        B0 = B0_MHz/42.577478518/2.35051756758e5
-        finitefield_shifts = MagFieldLFT.estimate_shifts_finitefield(lft, B0, T, grid)
-        shift_ord4 = MagFieldLFT.calc_shifts_KurlandMcGarvey_ord4(lft, R, T, B0, true, true)
-        push!(diff_list_ord4, shift_0 .- shift_ord4)
-        push!(diff_list_finitefield, shift_0 .- finitefield_shifts)
-    end
+    B0_MHz = 50.0  # should not be chosen too small: probably numerical precision issue
+    B0 = B0_MHz/42.577478518/2.35051756758e5  # trafo from MHz to Tesla and then to atomic units
+    finitefield_shifts = MagFieldLFT.estimate_shifts_finitefield(lft, B0, T, grid)
+    shift_ord4 = MagFieldLFT.calc_shifts_2ndorder_total(lft, T, B0)
+    diff_ord4 = shift_0 - shift_ord4
+    diff_finitefield = shift_0 - finitefield_shifts
 
-    return norm(diff_list_ord4[1]-diff_list_finitefield[1])<1e-7
+    return norm(diff_ord4[1]-diff_finitefield[1])<1e-7
 
 end
 
