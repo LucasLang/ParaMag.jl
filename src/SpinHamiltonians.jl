@@ -64,11 +64,16 @@ BHF_trafo:: Matrix applied to vector of base operators to get hyperfine field op
 base_op:: vector of base operators (here: spin operators)
 """
 struct SpinHamiltonian <: CompModel
-    S::Float64
     H_fieldfree::HermMat
     Mel_trafo::Matrix{Float64}
     BHF_trafo::Vector{Matrix{Float64}}
     base_op::Vector{Matrix{ComplexF64}}
+end
+
+function get_S(sh::SpinHamiltonian)
+    mult = size(sh.H_fieldfree)[1]
+    S = (mult-1)/2
+    return S
 end
 
 function calc_Sop(S)
@@ -102,7 +107,7 @@ function SpinHamiltonian(shparam::SHParam)
     Mel_trafo = -0.5*shparam.gtensor
     Nnuc = length(shparam.Atensors)
     BHF_trafo = [-(1/shparam.gammas[i])*shparam.Atensors[i] for i in 1:Nnuc]
-    return SpinHamiltonian(S, H_fieldfree, Mel_trafo, BHF_trafo, Sop)
+    return SpinHamiltonian(H_fieldfree, Mel_trafo, BHF_trafo, Sop)
 end
 
 function calc_magneticmoment_operator(shparam::SHParam)
