@@ -126,19 +126,25 @@ end
 """
 D-tensor has to be provided in atomic units! (not the more common cm-1)
 """
-function calc_dyadic(sh::SpinHamiltonian, T::Real, quadruple::Bool=false)
+function calc_dyadic(sh::SpinHamiltonian, T::Real)
     solution = eigen(sh.H_fieldfree)
     energies = solution.values
     states = solution.vectors
 
     SS = calc_F_deriv2(energies, states, sh.base_op, T)
+    return SS
+end
 
-    if quadruple
-        SSSS = calc_F_deriv4(energies, states, sh.base_op, T)
-        return SS, SSSS
-    else
-        return SS
-    end
+"""
+D-tensor has to be provided in atomic units! (not the more common cm-1)
+"""
+function calc_tetradic(sh::SpinHamiltonian, T::Real)
+    solution = eigen(sh.H_fieldfree)
+    energies = solution.values
+    states = solution.vectors
+
+    SSSS = calc_F_deriv4(energies, states, sh.base_op, T)
+    return SSSS
 end
 
 function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Real, B0::Float64, gfactor::Float64, direct::Bool=false, selforient::Bool=false)
