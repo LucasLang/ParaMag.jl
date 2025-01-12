@@ -185,6 +185,34 @@ function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Mat
     return shiftcon
 end
 
+# XXXLucasXXX: Only for test: delete again once not needed anymore!
+"""
+D-tensor has to be provided in atomic units! (not the more common cm-1)
+"""
+function calc_dyadics(s::Float64, D::Matrix{Float64}, T::Real, quadruple::Bool=false)
+    S = calc_soperators(s)
+
+    Hderiv = [S[:,:,1], S[:,:,2], S[:,:,3]]
+
+    StDS = sum(D[i, j] * S[:, :, i] * S[:, :, j] for i in 1:3, j in 1:3)
+
+    solution = eigen(StDS)
+    energies = solution.values
+    states = solution.vectors
+
+    SS = -calc_F_deriv2(energies, states, Hderiv, T)
+
+    if quadruple
+
+        SSSS = -calc_F_deriv4(energies, states, Hderiv, T)
+
+        return SS, SSSS
+    else
+        return SS
+    end
+
+end
+
 function calc_contactshift_fielddep(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Real, B0::Float64, direct::Bool=false, selforient::Bool=false)
 
     gammaI = 2.6752e8*1e-6 

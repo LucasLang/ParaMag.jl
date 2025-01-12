@@ -1169,6 +1169,45 @@ function test_PDA_SH_general_vs_specific()
     return norm(KMcG_shifts-shifts_generalfunction) < 1e-10
 end
 
+function test_fielddep_contactshifts()
+    gamma_1H = 2.6752e8      # proton gyromagnetic ratio in rad/s/T
+    gamma_1H *= MagFieldLFT.au_time * MagFieldLFT.au_fluxdensity # proton gyromagnetic ratio in atomic units
+
+    mult = 3   # NiSAL has a triplet ground state
+    S = (mult-1)/2
+
+    Dtensor = [3.021254 -5.482999 -16.364810; -5.482999 21.938653 -7.107412; -16.364810 -7.107412 -0.931482]
+    Dtensor *= MagFieldLFT.cmm1_Hartree  #from cm-1 to au (Hartree)
+
+    #from casscf-nevpt2 effective hamiltonian
+    gtensor = [2.320356 0.036880 0.109631; 0.036810 2.180382 0.053365; 0.109499 0.053077 2.347002]
+
+    Nnuc = length(R_selected_NiSAL)
+    gammas = [gamma_1H for A in 1:Nnuc]
+    Aiso_values_MHz = [-0.2398,	0.3677	,-0.0953	,0.1169,	5.6311,	0.8206,	2.5466,	0.9669,	2.2237,	-0.2058,	0.3801,	-0.0323,	0.0943,	5.7383,	-0.1162,	-0.1048,	1.3015,	4.0604,	3.9516,	0.929,	-0.1677,	-0.2015,	-3.5469]
+    Aiso_values_MHz_matrix = [-0.2398 -3.5469 5.6311 5.7383]
+    indices = [1, 23, 5, 14]
+    Aiso_values_MHz = Aiso_values_MHz[indices]    # select only some of them
+    Aiso_values_Hartree = Aiso_values_MHz * 1e6 * 2pi * MagFieldLFT.au_time  # conversion from frequency to energy in atomic units: E = omega = 2pi nu
+    Atensors = [Aiso*Matrix(1.0I, 3, 3) for Aiso in Aiso_values_Hartree]
+    shparam = MagFieldLFT.SHParam(mult, gtensor, Dtensor, Atensors, gammas)
+    sh = MagFieldLFT.SpinHamiltonian(shparam)
+
+    T = 298.0
+    B0_MHz = 1200.0
+    B0 = B0_MHz/42.577478518/2.35051756758e5
+
+    shifts_field_indep = MagFieldLFT.calc_fieldindep_shifts(sh, T)
+
+    shifts_indirect_oldfunction = MagFieldLFT.calc_contactshift_fielddep(S, Aiso_values_MHz_matrix, gtensor, Dtensor, T, B0, false, true)-shifts_field_indep
+    shifts_direct_oldfunction = MagFieldLFT.calc_contactshift_fielddep(S, Aiso_values_MHz_matrix, gtensor, Dtensor, T, B0, true, false)-shifts_field_indep
+
+    shifts_indirect_newfunction = MagFieldLFT.calc_fielddep_shifts_2ndorder_indirect(sh, T, B0)
+    shifts_direct_newfunction = MagFieldLFT.calc_fielddep_shifts_2ndorder_direct(sh, T, B0)
+
+    return norm(shifts_indirect_oldfunction-shifts_indirect_newfunction)<1e-5 && norm(shifts_direct_oldfunction-shifts_direct_newfunction)<1e-5
+end
+
 @testset "MagFieldLFT.jl" begin
     @test test_createSDs()
     @test test_createSDs2()
@@ -1241,4 +1280,5 @@ end
     @test test_susceptibility_fromdyadic()
     @test_broken test_Bleaney()
     @test test_PDA_SH_general_vs_specific()
+    @test test_fielddep_contactshifts()
 end
