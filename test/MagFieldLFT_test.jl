@@ -1185,7 +1185,6 @@ function test_fielddep_contactshifts()
     Nnuc = length(R_selected_NiSAL)
     gammas = [gamma_1H for A in 1:Nnuc]
     Aiso_values_MHz = [-0.2398,	0.3677	,-0.0953	,0.1169,	5.6311,	0.8206,	2.5466,	0.9669,	2.2237,	-0.2058,	0.3801,	-0.0323,	0.0943,	5.7383,	-0.1162,	-0.1048,	1.3015,	4.0604,	3.9516,	0.929,	-0.1677,	-0.2015,	-3.5469]
-    Aiso_values_MHz_matrix = [-0.2398 -3.5469 5.6311 5.7383]
     indices = [1, 23, 5, 14]
     Aiso_values_MHz = Aiso_values_MHz[indices]    # select only some of them
     Aiso_values_Hartree = Aiso_values_MHz * 1e6 * 2pi * MagFieldLFT.au_time  # conversion from frequency to energy in atomic units: E = omega = 2pi nu
@@ -1197,15 +1196,12 @@ function test_fielddep_contactshifts()
     B0_MHz = 1200.0
     B0 = B0_MHz/42.577478518/2.35051756758e5
 
-    shifts_field_indep = MagFieldLFT.calc_fieldindep_shifts(sh, T)
+    shifts_indirect = MagFieldLFT.calc_fielddep_shifts_2ndorder_indirect(sh, T, B0)
+    shifts_direct = MagFieldLFT.calc_fielddep_shifts_2ndorder_direct(sh, T, B0)
+    ref_indirect = [-0.0008741457857955934, -0.012929556662378742, 0.020527115656353536, 0.0209178930885359]
+    ref_direct = [0.06892304308923315, 1.0194459613561342, -1.6184843533769009, -1.6492956553750897]
 
-    shifts_indirect_oldfunction = MagFieldLFT.calc_contactshift_fielddep(S, Aiso_values_MHz_matrix, gtensor, Dtensor, T, B0, false, true)-shifts_field_indep
-    shifts_direct_oldfunction = MagFieldLFT.calc_contactshift_fielddep(S, Aiso_values_MHz_matrix, gtensor, Dtensor, T, B0, true, false)-shifts_field_indep
-
-    shifts_indirect_newfunction = MagFieldLFT.calc_fielddep_shifts_2ndorder_indirect(sh, T, B0)
-    shifts_direct_newfunction = MagFieldLFT.calc_fielddep_shifts_2ndorder_direct(sh, T, B0)
-
-    return norm(shifts_indirect_oldfunction-shifts_indirect_newfunction)<1e-5 && norm(shifts_direct_oldfunction-shifts_direct_newfunction)<1e-5
+    return norm(shifts_indirect-ref_indirect)<1e-5 && norm(shifts_direct-ref_direct)<1e-5
 end
 
 @testset "MagFieldLFT.jl" begin
