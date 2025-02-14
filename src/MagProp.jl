@@ -647,3 +647,38 @@ function calc_shifts_KurlandMcGarvey_Br(chi::Array{Float64, 2}, R::Vector{Vector
     shifts *= 1e6    # convert to ppm
     return shifts
 end
+
+# Analysis of magnetic susceptibility tensor
+
+function princ_comp_sort(w, v)
+    #orders the eigenvalues from smallest to largest (and eigenvectors accordingly)
+    indices = sortperm(abs.(w))
+    wst = w[indices]
+    vst = v[:, indices]
+    return wst, vst
+end
+
+function euler_from_R(R)
+    # Computes the Euler angles from the rotation matrix in ZYZ convention
+    # ref: https://en.wikipedia.org/wiki/Euler_angles
+    beta = atan(sqrt(1 - R[3, 3]^2), R[3, 3])  
+    alpha = atan(R[2, 3], R[1, 3]) 
+    gamma = atan(R[3, 2], -R[3, 1]) 
+    return alpha, beta, gamma
+end
+
+function chi_axrh_angles(chi)
+
+    solution = eigen(chi-tr(chi)/3*Matrix(1.0I, 3, 3))
+    w_or = solution.values
+    v_or = solution.vectors
+    w,v = princ_comp_sort(w_or, v_or)  #orders the eigenvalues from smallest to largest (and eigenvectors accordingly)
+    ax = w[3]*3/2
+    rh = (w[1]-w[2])/2
+
+    angles = euler_from_R(v)   # computes Euler angles from rotation matrix in ZYZ convention
+    angles = [angle*180/pi for angle in angles]   # the angles are returned in degrees
+    angles_c = [angles[1]+180.0, angles[2], angles[3]+180.0]   # adjust the alpha and gamma angles to be in the range [0,360]
+
+    return ax, rh, angles_c
+end

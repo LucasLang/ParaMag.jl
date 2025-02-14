@@ -549,9 +549,24 @@ function Bkq_real2complex(bkq_real)
         bkq_complex[k] = Dict{Int64, ComplexF64}()
         bkq_complex[k][0] = bkq_real[k][0]
         for q in 1:k
-            bkq_complex[k][q] = bkq_real[k][q] + im*bkq_real[k][-q]
-            bkq_complex[k][-q] = (-1)^q * conj(bkq_complex[k][q])
+            bkq_complex[k][q] = (-1)^q * (bkq_real[k][q] - im*bkq_real[k][-q])   #I chnaged this according to your notes
+            bkq_complex[k][-q] = bkq_real[k][q] + im*bkq_real[k][-q]
         end
     end
     return BkqParam(bkq_complex)
+end
+
+function Wyb2Stevens(bkq, Ln)
+    #order k=2,4,6 and q=-k,...,k (real numbers)
+    #returns Bkq in Stevens formalism (NOT multiplied by theta factor)
+    bkq_c = []
+    count = 0
+    for k in 2:2:6
+        for q in -k:k
+            count += 1
+            push!(bkq_c, bkq[count]/conv_Wyb2Stev[(k,abs(q))]*theta_factors[(Ln,k)])
+        end
+    end
+
+    return bkq_c
 end
