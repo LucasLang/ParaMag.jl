@@ -23,21 +23,42 @@ end
 function setup_Lebedev_grids()
     pkgpath = dirname(pathof(ParaMag))
     gridsizes = [6, 14, 26, 38, 50, 74, 86, 110, 146, 170, 194, 230, 266, 302, 350, 434, 590, 770, 974, 1202, 1454, 1730, 2030, 2354, 2702, 3074, 3470, 3890, 4334, 4802, 5294, 5810]
-    lebedev_grids = Vector{Vector{Tuple{Float64, Float64, Float64}}}(undef, 0)
+    grids = Vector{Vector{Tuple{Float64, Float64, Float64}}}(undef, 0)
     for N in gridsizes
-        xyzgrid = readdlm("$pkgpath/grids/grid_$N")
+        xyzgrid = readdlm("$pkgpath/grids/lebedevgrids/grid_$N")
         grid = Vector{Tuple{Float64, Float64, Float64}}(undef, 0)
         for i in 1:(size(xyzgrid)[1])
             theta, phi = xyz2spher(xyzgrid[i,1], xyzgrid[i,2], xyzgrid[i,3])
             weight = 4pi * xyzgrid[i,4]
             push!(grid, (theta, phi, weight))
         end
-        push!(lebedev_grids, grid)
+        push!(grids, grid)
     end
-    return lebedev_grids
+    return grids
+end
+
+function setup_repulsion_grids()
+    pkgpath = dirname(pathof(ParaMag))
+    gridsizes = [10, 20, 30, 66, 100, 144, 168, 256, 320, 678, 2000]
+    grids = Vector{Vector{Tuple{Float64, Float64, Float64}}}(undef, 0)
+    for N in gridsizes
+        # Read contents as a string
+        contents = read("$pkgpath/grids/repgrids/rep$(N)_cryst", String)
+        # Remove backslashes
+        contents_clean = replace(contents, "\\" => "")
+        # Parse string into an array.
+        # Note: eval should only be used on trusted input
+        array = eval(Meta.parse(contents_clean))
+        # Swap the first and second columns and convert the angles (degrees to radians),
+        # Multiply the third column by 4π (normalization to solid angle of the unit sphere).
+        grid = [ (row[2]*(pi/180), row[1]*(pi/180), row[3]*(4*pi)) for row in array ]
+        push!(grids, grid)
+    end
+    return grids
 end
 
 lebedev_grids = setup_Lebedev_grids()
+repulsion_grids = setup_repulsion_grids()
 
 const HermMat{T<:Number} = Hermitian{T, Matrix{T}} # Complex Hermitian (or real symmetric) matrix
 

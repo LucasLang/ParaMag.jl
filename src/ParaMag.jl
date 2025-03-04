@@ -2,7 +2,7 @@ module ParaMag
 
 using LinearAlgebra, Permutations, OutputParser, DelimitedFiles, Printf, TensorOperations, WignerSymbols
 
-export read_AILFT_params_ORCA, LFTParam, lebedev_grids
+export read_AILFT_params_ORCA, LFTParam, lebedev_grids, repulsion_grids
 export calc_dyadic
 
 include("Constants.jl")
