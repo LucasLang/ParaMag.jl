@@ -3,7 +3,6 @@ Read parameters (in atomic units).
 method: e.g. "CASSCF" or "NEVPT2"
 """
 function read_AILFT_params_ORCA(outfile::String, method::String)
-    println(outfile)
     nel = parse_int(outfile, ["nel"], 0, 3)
     norb = parse_int(outfile, ["norb"], 0, 3)
     l = (norb-1)÷2
