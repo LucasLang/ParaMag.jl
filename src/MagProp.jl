@@ -37,6 +37,10 @@ function setup_Lebedev_grids()
     return grids
 end
 
+"""
+The repulsion grids in the folder grids/repgrids are taken from the file
+crystdat.c of the SIMPSON package: https://github.com/vosegaard/simpson
+"""
 function setup_repulsion_grids()
     pkgpath = dirname(pathof(ParaMag))
     gridsizes = [10, 20, 30, 66, 100, 144, 168, 256, 320, 678, 2000]
