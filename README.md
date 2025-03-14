@@ -7,4 +7,4 @@ Some functionality (e.g. reading ligand field parameters from an ORCA AILFT outp
 
 If you use `ParaMag.jl` in your research, please cite
 
-[Lang et al.: Theory of Field-Dependent NMR shifts in Paramagnetic Molecules](https://doi.org/10.26434/chemrxiv-2025-1z8v9)
+[Lang et al.: Theory of Field-Dependent NMR Shifts in Paramagnetic Molecules](https://doi.org/10.26434/chemrxiv-2025-1z8v9)
