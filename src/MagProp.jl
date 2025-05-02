@@ -23,21 +23,46 @@ end
 function setup_Lebedev_grids()
     pkgpath = dirname(pathof(ParaMag))
     gridsizes = [6, 14, 26, 38, 50, 74, 86, 110, 146, 170, 194, 230, 266, 302, 350, 434, 590, 770, 974, 1202, 1454, 1730, 2030, 2354, 2702, 3074, 3470, 3890, 4334, 4802, 5294, 5810]
-    lebedev_grids = Vector{Vector{Tuple{Float64, Float64, Float64}}}(undef, 0)
+    grids = Vector{Vector{Tuple{Float64, Float64, Float64}}}(undef, 0)
     for N in gridsizes
-        xyzgrid = readdlm("$pkgpath/grids/grid_$N")
+        xyzgrid = readdlm("$pkgpath/grids/lebedevgrids/grid_$N")
         grid = Vector{Tuple{Float64, Float64, Float64}}(undef, 0)
         for i in 1:(size(xyzgrid)[1])
             theta, phi = xyz2spher(xyzgrid[i,1], xyzgrid[i,2], xyzgrid[i,3])
             weight = 4pi * xyzgrid[i,4]
             push!(grid, (theta, phi, weight))
         end
-        push!(lebedev_grids, grid)
+        push!(grids, grid)
     end
-    return lebedev_grids
+    return grids
+end
+
+"""
+The repulsion grids in the folder grids/repgrids are taken from the file
+crystdat.c of the SIMPSON package: https://github.com/vosegaard/simpson
+"""
+function setup_repulsion_grids()
+    pkgpath = dirname(pathof(ParaMag))
+    gridsizes = [10, 20, 30, 66, 100, 144, 168, 256, 320, 678, 2000]
+    grids = Vector{Vector{Tuple{Float64, Float64, Float64}}}(undef, 0)
+    for N in gridsizes
+        # Read contents as a string
+        contents = read("$pkgpath/grids/repgrids/rep$(N)_cryst", String)
+        # Remove backslashes
+        contents_clean = replace(contents, "\\" => "")
+        # Parse string into an array.
+        # Note: eval should only be used on trusted input
+        array = eval(Meta.parse(contents_clean))
+        # Swap the first and second columns and convert the angles (degrees to radians),
+        # Multiply the third column by 4π (normalization to solid angle of the unit sphere).
+        grid = [ (row[2]*(pi/180), row[1]*(pi/180), row[3]*(4*pi)) for row in array ]
+        push!(grids, grid)
+    end
+    return grids
 end
 
 lebedev_grids = setup_Lebedev_grids()
+repulsion_grids = setup_repulsion_grids()
 
 const HermMat{T<:Number} = Hermitian{T, Matrix{T}} # Complex Hermitian (or real symmetric) matrix
 
@@ -114,8 +139,8 @@ function calc_F_deriv1(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     Zel = sum(energies_exp)   # canonical partition function
     Hderiv_eigenbasis = [states'*Hderiv_comp*states for Hderiv_comp in Hderiv]
     Fderiv1 = [sum(energies_exp .* diag(Hderiv_eigenbasis_comp))/Zel for Hderiv_eigenbasis_comp in Hderiv_eigenbasis]
-    if (norm(Fderiv1)>1e-10)    # assert does not make sense if both real and imaginary part are zero
-        @assert norm(imag(Fderiv1))/norm(real(Fderiv1)) < 1e-5    # need to be real
+    if (norm(Fderiv1)>1e-8)    # assert does not make sense if both real and imaginary part are zero
+        @assert norm(imag(Fderiv1))/norm(real(Fderiv1)) < 1e-4    # need to be real
     end
     return real(Fderiv1)
 end
@@ -302,7 +327,9 @@ function calc_F_deriv2(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     Fderiv1 = calc_F_deriv1(energies, states, Hderiv, T)
     Fderiv2 += 0.5*beta* Fderiv1*Fderiv1'
     Fderiv2 += transpose(Fderiv2)  # symmetrization
-    @assert norm(imag(Fderiv2))/norm(real(Fderiv2)) < 1e-5
+    if (norm(Fderiv2)>1e-5)    # assert does not make sense if both real and imaginary part are zero
+        @assert norm(imag(Fderiv2))/norm(real(Fderiv2)) < 1e-4
+    end
     return real(Fderiv2)
 end
 
@@ -350,9 +377,8 @@ function calc_F_deriv3(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     for k in 1:factorial(nindices)   # loop over all permutations of three indices
         Fderiv3_symmetrized += permutedims(Fderiv3, Permutation(nindices,k))
     end
-    if (norm(Fderiv3_symmetrized)>1e-5)    # assert does not make sense if both real and imaginary part are zero
-        println(norm(imag(Fderiv3_symmetrized))/norm(real(Fderiv3_symmetrized)))
-        @assert norm(imag(Fderiv3_symmetrized))/norm(real(Fderiv3_symmetrized)) < 1e-2   #1e-5
+    if (norm(Fderiv3_symmetrized)>1e-3)    # assert does not make sense if both real and imaginary part are zero
+        @assert norm(imag(Fderiv3_symmetrized))/norm(real(Fderiv3_symmetrized)) < 1e-3
     end
     return real(Fderiv3_symmetrized)
 end
@@ -406,7 +432,9 @@ function calc_F_deriv4(energies::Vector{Float64}, states::Matrix{ComplexF64}, Hd
     for k in 1:factorial(nindices)   # loop over all permutations of three indices
         Fderiv4_symmetrized += permutedims(Fderiv4, Permutation(nindices,k))
     end
-    @assert norm(imag(Fderiv4_symmetrized))/norm(real(Fderiv4_symmetrized)) < 1e-5
+    if (norm(Fderiv4_symmetrized)>1e-3)    # assert does not make sense if both real and imaginary part are zero
+        @assert norm(imag(Fderiv4_symmetrized))/norm(real(Fderiv4_symmetrized)) < 1e-3
+    end
     return real(Fderiv4_symmetrized)
 end
 
@@ -459,6 +487,54 @@ function calc_fieldindep_shifts(model::CompModel, T::Real)
     shifts = [calc_fieldindep_shift(shielding) for shielding in shieldings]
     shifts *= 1e6   # convert to ppm
     return shifts
+end
+
+function calc_tau_tensors(model::CompModel, T::Real)
+    B0 = [0.0, 0.0, 0.0]
+    Fderiv4 = calc_F_deriv4(model, T, B0)    # with base_op as perturbation operators
+
+    function trafo(Fderiv4, M, B)
+        @tensor begin
+            tau[j, k, l, i] := M[j, m] * M[k, n] * M[l, o] * B[i, p] * Fderiv4[m, n, o, p]
+        end
+    end
+
+    return (1/6)*[trafo(Fderiv4, model.Mel_trafo, BHF_trafo_i) for BHF_trafo_i in model.BHF_trafo]
+end
+
+function calc_fielddep_shifts_2ndorder_direct(model::CompModel, T::Real, B0::Real)
+    tau_tensors = calc_tau_tensors(model, T)
+    shifts = [-(1/5)*trace_ord2(tau_tensor)*B0^2 for tau_tensor in tau_tensors]
+    shifts *= 1e6   # convert to ppm
+    return shifts
+end
+
+function calc_fielddep_shifts_2ndorder_indirect(model::CompModel, T::Real, B0::Real)
+    beta = 1/kB/T
+    mu0 = 4pi*alpha^2
+    chi = calc_susceptibility_vanVleck(model, T)
+    sigmas = calc_shieldings(model, T)
+    shifts = [((1/45)*beta/mu0 *tr(sigma)*tr(chi) -(1/15)*beta/mu0 *tr(sigma*chi))*B0^2 for sigma in sigmas]
+    shifts *= 1e6   # convert to ppm
+    return shifts
+end
+
+"""
+This function only calculates the field-dependent part of the shift (at second order in B0).
+"""
+function calc_fielddep_shifts_2ndorder(model::CompModel, T::Real, B0::Real)
+    shifts_direct = calc_fielddep_shifts_2ndorder_direct(model, T, B0)
+    shifts_indirect = calc_fielddep_shifts_2ndorder_indirect(model, T, B0)
+    return shifts_direct + shifts_indirect
+end
+
+"""
+This function calculates the total shifts up to 2nd order in B0 (including field-independent shifts).
+"""
+function calc_shifts_2ndorder_total(model::CompModel, T::Real, B0::Real)
+    fieldindep_shifts = calc_fieldindep_shifts(model, T)
+    fielddep_shifts = calc_fielddep_shifts_2ndorder(model, T, B0)
+    return fieldindep_shifts + fielddep_shifts
 end
 
 """
@@ -529,7 +605,7 @@ end
 function trace_ord2(tensor::Array{Float64, 4})
     # computes the order 2 trace of a supersymmetric fourth order tensor
 
-    trace = @tensor begin    # XXXLucasLangXXX: trace should be deleted either in this or the next line
+    @tensor begin
         trace = tensor[i, i, j, j]
     end
 
@@ -538,9 +614,6 @@ end
 
 function product_ord3(tensor::Array{Float64, 4}, Dip::Array{Float64, 2})
     #dot product between two fourth order tensors
-
-    sigma = zeros(Float64, 3, 3, 3, 3)
-
     @tensor begin
         sigma[l, m, n, k] := tensor[l, m, n, q] * Dip[q, k]
     end

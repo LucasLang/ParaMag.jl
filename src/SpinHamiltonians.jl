@@ -64,11 +64,16 @@ BHF_trafo:: Matrix applied to vector of base operators to get hyperfine field op
 base_op:: vector of base operators (here: spin operators)
 """
 struct SpinHamiltonian <: CompModel
-    S::Float64
     H_fieldfree::HermMat
     Mel_trafo::Matrix{Float64}
     BHF_trafo::Vector{Matrix{Float64}}
     base_op::Vector{Matrix{ComplexF64}}
+end
+
+function get_S(sh::SpinHamiltonian)
+    mult = size(sh.H_fieldfree)[1]
+    S = (mult-1)/2
+    return S
 end
 
 function calc_Sop(S)
@@ -102,7 +107,7 @@ function SpinHamiltonian(shparam::SHParam)
     Mel_trafo = -0.5*shparam.gtensor
     Nnuc = length(shparam.Atensors)
     BHF_trafo = [-(1/shparam.gammas[i])*shparam.Atensors[i] for i in 1:Nnuc]
-    return SpinHamiltonian(S, H_fieldfree, Mel_trafo, BHF_trafo, Sop)
+    return SpinHamiltonian(H_fieldfree, Mel_trafo, BHF_trafo, Sop)
 end
 
 function calc_magneticmoment_operator(shparam::SHParam)
@@ -121,23 +126,28 @@ end
 """
 D-tensor has to be provided in atomic units! (not the more common cm-1)
 """
-function calc_dyadic(sh::SpinHamiltonian, T::Float64, quadruple::Bool=false)
+function calc_dyadic(sh::SpinHamiltonian, T::Real)
     solution = eigen(sh.H_fieldfree)
     energies = solution.values
     states = solution.vectors
 
     SS = calc_F_deriv2(energies, states, sh.base_op, T)
-
-    if quadruple
-        SSSS = calc_F_deriv4(energies, states, sh.base_op, T)
-        return SS, SSSS
-    else
-        return SS
-    end
+    return SS
 end
 
+"""
+D-tensor has to be provided in atomic units! (not the more common cm-1)
+"""
+function calc_tetradic(sh::SpinHamiltonian, T::Real)
+    solution = eigen(sh.H_fieldfree)
+    energies = solution.values
+    states = solution.vectors
 
-function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Float64, B0::Float64, gfactor::Float64, direct::Bool=false, selforient::Bool=false)
+    SSSS = calc_F_deriv4(energies, states, sh.base_op, T)
+    return SSSS
+end
+
+function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Real, B0::Float64, gfactor::Float64, direct::Bool=false, selforient::Bool=false)
 
     gammaI = 2.6752e8*1e-6 
     gammaI *= 2.35051756758e5
@@ -145,7 +155,7 @@ function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Mat
     beta = 1/(kB*T)
 
     SH = SpinHamiltonian(Int(2*s+1), g, D)
-    SS = calc_dyadic(SH, T, false)
+    SS = calc_dyadic(SH, T)
     SS *= -1
 
     #Br = Brillouin(s, T, B0)
@@ -182,7 +192,7 @@ function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Mat
     return shiftcon
 end
 
-function calc_contactshift_fielddep(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Float64, B0::Float64, direct::Bool=false, selforient::Bool=false)
+function calc_contactshift_fielddep(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Real, B0::Float64, direct::Bool=false, selforient::Bool=false)
 
     gammaI = 2.6752e8*1e-6 
     gammaI *= 2.35051756758e5
@@ -190,7 +200,8 @@ function calc_contactshift_fielddep(s::Float64, Aiso::Matrix{Float64}, g::Matrix
     beta = 1/(kB*T)
 
     SH = SpinHamiltonian(Int(2*s+1), g, D)
-    SS, SSSS = calc_dyadic(SH, T, true)
+    SS = calc_dyadic(SH, T)
+    SSSS = calc_tetradic(SH, T)
     SS *= -1
     SSSS *= -1
     

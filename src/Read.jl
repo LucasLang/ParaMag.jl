@@ -1,7 +1,6 @@
 """
 Read parameters (in atomic units).
 method: e.g. "CASSCF" or "NEVPT2"
-TO DO: extend for f elements and for SOC parameter.
 """
 function read_AILFT_params_ORCA(outfile::String, method::String)
     nel = parse_int(outfile, ["nel"], 0, 3)
@@ -16,9 +15,17 @@ function read_AILFT_params_ORCA(outfile::String, method::String)
         end
         perm = [4,2,1,3,5]    # change order from 0,1,-1,2,-2 to 2,1,0,-1,-2 (=x2-y2,xz,z2,yz,xy) 
         hLFT = hLFT[perm, perm]
-        F0 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 4)
-        F2 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 3, 2)
-        F4 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 4, 2)
+        if method == "CASSCF"
+            F0 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 4)
+            F2 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 3, 2)
+            F4 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 4, 2)
+        elseif method == "NEVPT2"
+            # take CASSCF value for F0: does not matter for energy differences
+            F0 = parse_float(outfile, ["AILFT MATRIX ELEMENTS (CASSCF)", "Slater-Condon"], 2, 4)
+            F2 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 2)
+            F4 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 3, 2)
+        end
+
         F = Dict(0 => F0, 2 => F2/49, 4 => F4/441)
         zeta = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "ZETA_D"], 0, 2)/219474.63  # convert from cm-1 to Hartree
     end
@@ -549,7 +556,7 @@ function Bkq_real2complex(bkq_real)
         bkq_complex[k] = Dict{Int64, ComplexF64}()
         bkq_complex[k][0] = bkq_real[k][0]
         for q in 1:k
-            bkq_complex[k][q] = (-1)^q * (bkq_real[k][q] - im*bkq_real[k][-q])   #I chnaged this according to your notes
+            bkq_complex[k][q] = (-1)^q * (bkq_real[k][q] - im*bkq_real[k][-q])
             bkq_complex[k][-q] = bkq_real[k][q] + im*bkq_real[k][-q]
         end
     end
