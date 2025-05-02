@@ -121,7 +121,7 @@ end
 """
 D-tensor has to be provided in atomic units! (not the more common cm-1)
 """
-function calc_dyadic(sh::SpinHamiltonian, T::Real, quadruple::Bool=false)
+function calc_dyadic(sh::SpinHamiltonian, T::Float64, quadruple::Bool=false)
     solution = eigen(sh.H_fieldfree)
     energies = solution.values
     states = solution.vectors
@@ -137,14 +137,16 @@ function calc_dyadic(sh::SpinHamiltonian, T::Real, quadruple::Bool=false)
 end
 
 
-function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Real, B0::Float64, gfactor::Float64, direct::Bool=false, selforient::Bool=false)
+function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Float64, B0::Float64, gfactor::Float64, direct::Bool=false, selforient::Bool=false)
 
     gammaI = 2.6752e8*1e-6 
     gammaI *= 2.35051756758e5
 
     beta = 1/(kB*T)
 
-    SS = calc_dyadics(s, D, T, false)
+    SH = SpinHamiltonian(Int(2*s+1), g, D)
+    SS = calc_dyadic(SH, T, false)
+    SS *= -1
 
     #Br = Brillouin(s, T, B0)
     Br = Brillouin_truncated(s, T, B0, gfactor)
@@ -180,14 +182,17 @@ function calc_contactshift_fielddep_Br(s::Float64, Aiso::Matrix{Float64}, g::Mat
     return shiftcon
 end
 
-function calc_contactshift_fielddep(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Real, B0::Float64, direct::Bool=false, selforient::Bool=false)
+function calc_contactshift_fielddep(s::Float64, Aiso::Matrix{Float64}, g::Matrix{Float64}, D::Matrix{Float64}, T::Float64, B0::Float64, direct::Bool=false, selforient::Bool=false)
 
     gammaI = 2.6752e8*1e-6 
     gammaI *= 2.35051756758e5
 
     beta = 1/(kB*T)
 
-    SS, SSSS = calc_dyadics(s, D, T, true)
+    SH = SpinHamiltonian(Int(2*s+1), g, D)
+    SS, SSSS = calc_dyadic(SH, T, true)
+    SS *= -1
+    SSSS *= -1
     
     chi = pi*alpha^2 * g * SS * g'
 
