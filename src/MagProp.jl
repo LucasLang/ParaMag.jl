@@ -648,7 +648,7 @@ function calc_shifts_KurlandMcGarvey_ord4(chi::Array{Float64, 2}, chi3::Array{Fl
     return shifts
 end
 
-function calc_shifts_KurlandMcGarvey_Br(chi::Array{Float64, 2}, R::Vector{Vector{Float64}}, T::Float64, B0::Float64, S::Float64, gfactor::Float64, direct::Bool=false, indirect::Bool=false)
+function calc_shifts_KurlandMcGarvey_Br(chi::Array{Float64, 2}, R::Vector{Vector{Float64}}, T::Real, B0::Float64, S::Float64, gfactor::Float64, direct::Bool=false, indirect::Bool=false)
     #pcs calculation with Kurland-McGarvey equation
     #the saturation effect is accounted for with Brillouin equation
 
