@@ -1,4 +1,4 @@
-module MagFieldLFT
+module ParaMag
 
 using LinearAlgebra, Permutations, OutputParser, DelimitedFiles, Printf, TensorOperations, WignerSymbols
 

@@ -1,4 +1,4 @@
-name = "MagFieldLFT"
+name = "ParaMag"
 uuid = "4d626724-46bd-4bad-9021-ec4aea92086c"
 authors = ["Lucas Lang <lucas.lang@chem.tu-berlin.de>"]
 version = "0.1.0"
