@@ -110,19 +110,6 @@ function SpinHamiltonian(shparam::SHParam)
     return SpinHamiltonian(H_fieldfree, Mel_trafo, BHF_trafo, Sop)
 end
 
-function calc_magneticmoment_operator(shparam::SHParam)
-    S = 0.5*(shparam.mult - 1)    # Spin quantum number
-    Sop = calc_soperators(S)
-    Mel = [0.5*sum(shparam.gtensor[i,j] * Sop[:, :, j] for j in 1:3) for i in 1:3]
-    return Mel
-end
-
-function calc_operators(shparam::SHParam)
-    H_fieldfree = calc_H_fieldfree(shparam)
-    Mel = calc_magneticmoment_operator(shparam)
-    return H_fieldfree, Mel
-end
-
 """
 D-tensor has to be provided in atomic units! (not the more common cm-1)
 """
