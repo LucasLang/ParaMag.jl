@@ -37,7 +37,9 @@ function read_AILFT_params_ORCA(outfile::String, method::String)
             end
         end
         perm = [6,4,2,1,3,5,7]    # change order from 0,1,-1,2,-2,3,-3 to 3,2,1,0,-1,-2,-3
-        hLFT = hLFT[perm, perm]
+        hLFT = hLFT[perm, perm] 
+        D = Diagonal([-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0]) #added Clara
+        hLFT = D * hLFT * D #added Clara
         F0 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 2, 2)
         F2 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 3, 2)
         F4 = parse_float(outfile, ["AILFT MATRIX ELEMENTS ($method)", "Slater-Condon"], 4, 2)
